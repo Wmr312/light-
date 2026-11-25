@@ -9,6 +9,9 @@
   'use strict';
 
   function build(g) {
+    // 空盘保护：shape 和 fileName 都没有 → 不生成任何几何
+    if (!g || (!g.shape && !g.fileName)) return { positions: [], indices: [] };
+
     var L = Math.max(0.5, +g.length || 30);
     var r1 = Math.max(0.05, (+g.d1 || 3) / 2);
     var r2 = Math.max(0.05, (+g.d2 || g.d1 || 3) / 2);
