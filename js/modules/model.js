@@ -218,6 +218,9 @@
               '<div class="field"><label>' + LG.t('model.led.height') + ' (mm)</label><input type="number" id="m-led-hgt" step="0.1" min="0.3" max="10"></div>' +
               '<div class="field" id="m-led-concave-wrap" style="display:none"><label>' + LG.t('model.led.concaveDepth') + ' (mm)</label><input type="number" id="m-led-cd" step="0.05" min="0.1" max="1.0"></div>' +
               '<div class="field" id="m-led-convex-wrap" style="display:none"><label>' + LG.t('model.led.convexRadius') + ' (mm)</label><input type="number" id="m-led-cr" step="0.1" min="0.2" max="5.0"></div>' +
+              '<div class="field"><label>' + LG.t('model.led.rotZ') + ' (°)</label>' +
+                '<div class="input-slider"><input type="range" id="m-led-rot" min="-180" max="180" step="1">' +
+                '<input type="number" id="m-led-rot-n" min="-180" max="180" step="1"></div></div>' +
             '</div>' +
             '<div class="hint">' + LG.t('model.led.hint') + '</div>' +
           '</div>' +
@@ -242,6 +245,7 @@
         '<div class="stage">' +
           '<div class="viewer-slot" id="model-viewer"></div>' +
           '<div class="stage-toolbar">' +
+            '<select id="ws-select" class="stage-sel" title="' + LG.t('plate.wsSelTip') + '"></select>' +
             '<button id="plate-add" type="button" class="btn btn-ghost btn-sm plate-add-btn" title="' + LG.t('plate.add') + '">＋ ' + LG.t('plate.add') + '</button>' +
             '<span class="plate-count-pill" id="plate-count"></span>' +
           '</div>' +
@@ -327,6 +331,8 @@
     $('m-led-hgt').value = led.height != null ? led.height : 1.5;
     $('m-led-cd').value = led.concaveDepth != null ? led.concaveDepth : 0.4;
     $('m-led-cr').value = led.convexRadius != null ? led.convexRadius : 0.6;
+    var rotZ = led.rotZ != null ? led.rotZ : 0;
+    $('m-led-rot').value = rotZ; $('m-led-rot-n').value = rotZ;
     syncLEDUI();
     // transform DOM 已隐藏，不再填充
     syncMatLibUI();
@@ -364,6 +370,13 @@
     });
     ['m-led-wid', 'm-led-hgt', 'm-led-cd', 'm-led-cr'].forEach(function (id) {
       $(id).addEventListener('input', saveLED);
+    });
+    // 旋转角：slider ↔ number 双向同步 + 实时保存
+    $('m-led-rot').addEventListener('input', function () {
+      $('m-led-rot-n').value = $('m-led-rot').value; saveLED();
+    });
+    $('m-led-rot-n').addEventListener('input', function () {
+      $('m-led-rot').value = $('m-led-rot-n').value; saveLED();
     });
 
     // ---- 装配间隙 ----
@@ -582,29 +595,15 @@
     function plateItems() {
       var list = LG.Store.list();
       var activeId = LG.state.project && LG.state.project.id;
-      var groups = [], byKey = {};
-      for (var i = 0; i < list.length; i++) {
-        var key = LG.Store.plateIdOf(list[i]);
-        var grp = byKey[key];
-        if (!grp) { grp = { key: key, projects: [] }; byKey[key] = grp; groups.push(grp); }
-        grp.projects.push(list[i]);
-      }
-      return groups.map(function (grp) {
-        var ps = grp.projects;
-        // 盘的代表项目：优先当前项目（决定点击盘面/盘工具作用的项目），否则取该盘第一个项目
-        var rep = ps[0];
-        for (var j = 0; j < ps.length; j++) if (ps[j].id === activeId) { rep = ps[j]; break; }
-        var it = { id: rep.id, name: rep.name, locked: !!rep.locked, parts: [] };
-        for (j = 0; j < ps.length; j++) {
-          var part = { id: ps[j].id, name: ps[j].name };
-          fillPartMesh(ps[j], part);
-          it.parts.push(part);
-        }
+      // 新模型：一个 project = 一块盘，不再按 plateId 分组
+      return list.map(function (p) {
+        var it = { id: p.id, name: p.name, locked: !!p.locked, parts: [] };
+        var part = { id: p.id, name: p.name };
+        fillPartMesh(p, part);
+        it.parts.push(part);
         // 兼容旧的单零件结构：Viewer 里没有 parts 时会自动包成单零件
-        if (ps.length === 1) {
-          it.positions = it.parts[0].positions;
-          it.indices = it.parts[0].indices;
-        }
+        it.positions = part.positions;
+        it.indices = part.indices;
         return it;
       });
     }
@@ -684,18 +683,47 @@
 
     function bindPlateToolbar() {
       $('plate-add').addEventListener('click', addPlate);
+      // 工作区切换
+      var wsSel = $('ws-select');
+      wsSel.addEventListener('change', function () {
+        var wsId = wsSel.value;
+        if (!wsId) return;
+        LG.Store.setActiveWorkspace(wsId);
+        // 切到新工作区后激活它最新的盘
+        var ws = LG.Store.listWorkspaces().find(function (w) { return w.id === wsId; });
+        if (!ws || !ws.plates.length) { LG.status(LG.t('plate.wsNoPlates')); return; }
+        var latest = ws.plates[0], latestTs = latest.updatedAt || latest.createdAt || 0;
+        for (var k = 1; k < ws.plates.length; k++) {
+          var ts = ws.plates[k].updatedAt || ws.plates[k].createdAt || 0;
+          if (ts > latestTs) { latest = ws.plates[k]; latestTs = ts; }
+        }
+        LG.Store.setActive(latest.id);
+        LG.state.project = LG.Store.active();
+        prepareProjectView(LG.state.project);
+        LG.Router.rerender();
+        LG.status(LG.t('plate.wsSwitched', ws.name));
+      });
     }
 
-    /** 顶部「共 N 盘」计数：按唯一 plateId 统计（一块盘可含多个零件） */
+    /** 同步工作区下拉、共 N 盘 pill */
     function syncPlateToolbar() {
+      var wsSel = $('ws-select');
+      if (wsSel) {
+        var wsList = LG.Store.listWorkspaces();
+        var curWsId = (LG.Store.activeWorkspace() && LG.Store.activeWorkspace().id) || '';
+        wsSel.innerHTML = '';
+        for (var w = 0; w < wsList.length; w++) {
+          var opt = document.createElement('option');
+          opt.value = wsList[w].id;
+          opt.textContent = '📁 ' + (wsList[w].name || LG.t('home.untitledWs')) +
+            '  (' + ((wsList[w].plates || []).length) + ' ' + LG.t('home.plates') + ')';
+          if (wsList[w].id === curWsId) opt.selected = true;
+          wsSel.appendChild(opt);
+        }
+      }
       var cnt = $('plate-count');
       if (!cnt) return;
-      var keys = {}, n = 0, list = LG.Store.list();
-      for (var i = 0; i < list.length; i++) {
-        var k = LG.Store.plateIdOf(list[i]);
-        if (!keys[k]) { keys[k] = 1; n++; }
-      }
-      cnt.textContent = LG.t('plate.count', n);
+      cnt.textContent = LG.t('plate.count', LG.Store.list().length);
     }
 
     /** 盘右上角快捷控件：删除 / 调整朝向 / 锁定 / 前后位置（可作用于任意盘） */
@@ -1199,6 +1227,7 @@
       var type = $('m-led-type').value;
       var len = Math.max(0.3, parseFloat($('m-led-len').value) || 3);
       var wid = (type === 'square') ? len : Math.max(0.3, parseFloat($('m-led-wid').value) || 2);
+      var rotZ = Math.max(-180, Math.min(180, parseInt($('m-led-rot-n').value) || 0));
       var led = {
         enabled: $('m-led-en').checked,
         type: type,
@@ -1207,10 +1236,10 @@
         height: Math.max(0.3, parseFloat($('m-led-hgt').value) || 1.5),
         gap: Math.max(0, parseFloat($('m-asm-gap').value) || 0.1),
         concaveDepth: Math.min(Math.max(0.1, parseFloat($('m-led-cd').value) || 0.4), 1.0),
-        convexRadius: Math.min(Math.max(0.2, parseFloat($('m-led-cr').value) || 0.6), 5.0)
+        convexRadius: Math.min(Math.max(0.2, parseFloat($('m-led-cr').value) || 0.6), 5.0),
+        rotZ: rotZ
       };
       LG.Store.updateActive({ led: led });
-      // LED 启用状态/参数变化后刷新位姿（导入模型 + 启用时按入射面重算，否则回退默认）
       LG.Engine.refreshLEDPose();
     }
     // 匀光档位说明：直接告诉结构工程师“更匀”的代价（总光效/侧漏）
@@ -1291,8 +1320,74 @@
     }
   }
 
+  /** 对外公共 API：刷新当前项目的几何 + 同步到 Viewer + 自动端面识别。
+   *  仿真启动前自动调用，确保 model 页的最新参数已同步到渲染层。 */
+  function refreshCurrentProject() {
+    try {
+      var proj = LG.state.project;
+      if (!proj) return false;
+      var g = proj.geometry || {};
+      if (g.fileName) {
+        // 导入模型：优先从内存缓存恢复
+        var cached = (LG.state.meshCache && LG.state.meshCache[proj.id]) || null;
+        if (!cached || !cached.positions || !cached.positions.length) {
+          if (LG.restoreMeshFromProject) LG.restoreMeshFromProject(proj);
+          cached = (LG.state.meshCache && LG.state.meshCache[proj.id]) || null;
+        }
+        if (!cached || !cached.positions || !cached.positions.length) return false;
+        LG.Viewer.setGeometryData(cached.positions, cached.indices, cached.name);
+        LG.state.mesh = { positions: cached.positions, indices: cached.indices, faceCount: LG.Viewer.faceCount() };
+      } else {
+        // 参数化：重新 build（确保 model 页最新参数已同步）
+        var built = LG.Geometry.build(g);
+        LG.Viewer.setGeometryData(built.positions, built.indices, 'Parametric: ' + g.shape);
+        LG.state.mesh = {
+          positions: built.positions, indices: built.indices,
+          faceCount: LG.Viewer.faceCount(), name: 'Parametric: ' + g.shape, isParametric: true
+        };
+      }
+      // 自动端面识别（若项目未持久化 faces）
+      var auto = LG.Viewer.autoEndCaps();
+      if (!(proj.faces && proj.faces.input && proj.faces.input.length)) {
+        LG.Store.updateActive({ faces: { input: auto.input, output: auto.output } });
+      }
+      LG.Viewer.setFaceHighlights(
+        (proj.faces && proj.faces.input) || auto.input,
+        (proj.faces && proj.faces.output) || auto.output
+      );
+      LG.Viewer.setLED(proj.led);
+      return true;
+    } catch (e) {
+      console.warn('refreshCurrentProject failed', e);
+      return false;
+    }
+  }
+
+  /** 对外公共 API：静默预检查（不弹窗，返回结果）。仿真启动前自动调用做快速结构预警。 */
+  function precheckSilent() {
+    try {
+      var p2 = LG.state.project;
+      if (!p2) return { warnings: 0, items: [] };
+      var g2 = p2.geometry || {}, sc2 = p2.scheme || {}, en2 = p2.eng || {};
+      var d1 = Math.max(0.05, +g2.d1 || 3);
+      var lib = LED_LIB[en2.ledModel];
+      var items = [];
+      if (lib) {
+        var emit = Math.max(lib.length, lib.width);
+        if (d1 < emit) items.push({ lv: 'warn', t: LG.t ? LG.t('pc.ledTooBig', d1.toFixed(2), emit.toFixed(1)) : 'LED 灯珠比导光柱粗' });
+      }
+      var multiGuide = ((p2.beads || []).length > 1) || LG.Store.list().length > 1;
+      if (multiGuide && en2.housing === 'black' && !en2.foam) items.push({ lv: 'warn', t: LG.t ? LG.t('pc.leak') : '侧壁漏光风险' });
+      var warns = 0;
+      for (var i = 0; i < items.length; i++) if (items[i].lv === 'warn') warns++;
+      return { warnings: warns, items: items };
+    } catch (e) {
+      return { warnings: 0, items: [], error: e.message };
+    }
+  }
+
   window.LG = window.LG || {};
   LG.Modules = LG.Modules || {};
   LG.LED_LIB = LED_LIB; // 供报告 / 项目对比复用 LED 型号尺寸
-  LG.Modules.model = { render: render };
+  LG.Modules.model = { render: render, refreshCurrentProject: refreshCurrentProject, precheckSilent: precheckSilent };
 })();
