@@ -1,1 +1,52 @@
-IyBMaWdodCBHdWlkZSBTaW11bGF0b3IgLSBsb2NhbCBzdGF0aWMgc2VydmVyCiMgUnVuOiAgcG93ZXJzaGVsbCAtRXhlY3V0aW9uUG9saWN5IEJ5cGFzcyAtRmlsZSAuXHNlcnZlLnBzMQojICAgb3IgZG91YmxlLWNsaWNrICBzdGFydC1zZXJ2ZXIuYmF0CiMgTGlzdGVucyBvbiBwb3J0cyA4NzY1IGFuZCA4MDgwLCBib3RoIGxvY2FsaG9zdCBhbmQgMTI3LjAuMC4xLgoKJHJvb3QgPSBTcGxpdC1QYXRoIC1QYXJlbnQgJE15SW52b2NhdGlvbi5NeUNvbW1hbmQuUGF0aAokbGlzdGVuZXIgPSBOZXctT2JqZWN0IFN5c3RlbS5OZXQuSHR0cExpc3RlbmVyCiRsaXN0ZW5lci5QcmVmaXhlcy5BZGQoJ2h0dHA6Ly9sb2NhbGhvc3Q6ODc2NS8nKQokbGlzdGVuZXIuUHJlZmlexMuQWRkKCdodHRwOi8vMTI3LjAuMC4xOjg3NjUvJykKJGxpc3RlbmVyLlByZWZpeGVzLkFkZCgnaHR0cDovL2xvY2FsaG9zdDo4MDgwLycpCiRsaXN0ZW5lci5QcmVmaXhlcy5BZGQoJ2h0dHA6Ly8xMjcuMC4wLjE6ODA4MC8nKQokbGlzdGVuZXIuU3RhcnQoKQoKV3JpdGUtSG9zdCAiU2VydmluZyAkcm9vdCIKV3JpdGUtSG9zdCAiICBodHRwOi8vbG9jYWxob3N0Ojg3NjUvIgpXcml0ZS1Ib3N0ICIgIGh0dHA6Ly9sb2NhbGhvc3Q6ODA4MC8iCldyaXRlLUhvc3QgIlByZXNzIEN0cmwrQyB0byBzdG9wLiIKCiRtaW1lID0gQHsKICAgICcuaHRtbCc9J3RleHQvaHRtbDsgY2hhcnNldD11dGYtOCc7ICcuY3NzJz0ndGV4dC9jc3M7IGNoYXJzZXQ9dXRmLTgnOwogICAgJy5qcyc9J2FwcGxpY2F0aW9uL2phdmFzY3JpcHQ7IGNoYXJzZXQ9dXRmLTgnOyAnLmpzb24nPSdhcHBsaWNhdGlvbi9qc29uOyBjaGFyc2V0PXV0Zi04JzsKICAgICcucG5nJz0naW1hZ2UvcG5nJzsgJy5qcGcnPSdpbWFnZS9qcGVnJzsgJy5qcGVnJz0naW1hZ2UvanBlZyc7CiAgICAnLnN2Zyc9J2ltYWdlL3N2Zyt4bWwnOyAnLmljbyc9J2ltYWdlL3gtaWNvbic7ICcud2F2Jz0nYXVkaW8vd2F2JzsKICAgICcuZ2xiJz0nbW9kZWwvZ2x0Zi1iaW5hcnknOyAnLmdsdGYnPSdtb2RlbC9nbHRmK2pzb24nOwogICAgJy5zdGwnPSdhcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0nOyAnLm9iaic9J3RleHQvcGxhaW47IGNoYXJzZXQ9dXRmLTgnCn0KCndoaWxlICgkbGlzdGVuZXIuSXNMaXN0ZW5pbmcpIHsKICAgICRjdHggPSAkbGlzdGVuZXIuR2V0Q29udGV4dCgpCiAgICB0cnkgewogICAgICAgICR1cmwgPSAkY3R4LlJlcXVlc3QuVXJsLkFic29sdXRlUGF0aC5UcmltU3RhcnQoJy8nKQogICAgICAgIGlmICgkdXJsIC1lcSAnJykgeyAkdXJsID0gJ2luZGV4Lmh0bWwnIH0KICAgICAgICAkcGF0aCA9IEpvaW4tUGF0aCAkcm9vdCAkdXJsLlJlcGxhY2UoJy8nLCAnXCcpCiAgICAgICAgaWYgKFRlc3QtUGF0aCAkcGF0aCAtUGF0aFR5cGUgTGVhZikgewogICAgICAgICAgICAkZXh0ID0gW1N5c3RlbS5JTy5QYXRoXTo6R2V0RXh0ZW5zaW9uKCR1cmwpLlRvTG93ZXIoKQogICAgICAgICAgICAkY3QgPSBpZiAoJG1pbWUuQ29udGFpbnNLZXkoJGV4dCkpIHsgJG1pbWVbJGV4dF0gfSBlbHNlIHsgJ2FwcGxpY2F0aW9uL29jdGV0LXN0cmVhbScgfQogICAgICAgICAgICAkYnl0ZXMgPSBbU3lzdGVtLklPLkZpbGVdOjpSZWFkQWxsQnl0ZXMoJHBhdGgpCiAgICAgICAgICAgICRjdHguUmVzcG9uc2UuQ29udGVudFR5cGUgPSAkY3QKICAgICAgICAgICAgJGN0eC5SZXNwb25zZS5Db250ZW50TGVuZ3RoNjQgPSAkYnl0ZXMuTGVuZ3RoCiAgICAgICAgICAgICRjdHguUmVzcG9uc2UuSGVhZGVycy5BZGQoJ0NhY2hlLUNvbnRyb2wnLCAnbm8tc3RvcmUsIG11c3QtcmV2YWxpZGF0ZScpCiAgICAgICAgICAgICRjdHguUmVzcG9uc2UuSGVhZGVycy5BZGQoJ1ByYWdtYScsICduby1jYWNoZScpCiAgICAgICAgICAgICRjdHguUmVzcG9uc2UuT3V0cHV0U3RyZWFtLldyaXRlKCRieXRlcywgMCwgJGJ5dGVzLkxlbmd0aCkKICAgICAgICB9IGVsc2UgewogICAgICAgICAgICAkY3R4LlJlc3BvbnNlLlN0YXR1c0NvZGUgPSA0MDQKICAgICAgICAgICAgJG1zZyA9IFtTeXN0ZW0uVGV4dC5FbmNvZGluZ106OlVURjguR2V0Qnl0ZXMoJ05vdCBmb3VuZCcpCiAgICAgICAgICAgICRjdHguUmVzcG9uc2UuT3V0cHV0U3RyZWFtLldyaXRlKCRtc2csIDAsICRtc2cuTGVuZ3RoKQogICAgICAgIH0KICAgIH0gY2F0Y2ggewogICAgICAgIHRyeSB7ICRjdHguUmVzcG9uc2UuU3RhdHVzQ29kZSA9IDUwMCB9IGNhdGNoIHsgfQogICAgfQogICAgJGN0eC5SZXNwb25zZS5PdXRwdXRTdHJlYW0uQ2xvc2UoKQp9Cg==
+# Light Guide Simulator - local static server
+# Run:  powershell -ExecutionPolicy Bypass -File .\serve.ps1
+#   or double-click  start-server.bat
+# Listens on ports 8765 and 8080, both localhost and 127.0.0.1.
+
+$root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$listener = New-Object System.Net.HttpListener
+$listener.Prefixes.Add('http://localhost:8765/')
+$listener.Prefixes.Add('http://127.0.0.1:8765/')
+$listener.Prefixes.Add('http://localhost:8080/')
+$listener.Prefixes.Add('http://127.0.0.1:8080/')
+$listener.Start()
+
+Write-Host "Serving $root"
+Write-Host "  http://localhost:8765/"
+Write-Host "  http://localhost:8080/"
+Write-Host "Press Ctrl+C to stop."
+
+$mime = @{
+    '.html'='text/html; charset=utf-8'; '.css'='text/css; charset=utf-8';
+    '.js'='application/javascript; charset=utf-8'; '.json'='application/json; charset=utf-8';
+    '.png'='image/png'; '.jpg'='image/jpeg'; '.jpeg'='image/jpeg';
+    '.svg'='image/svg+xml'; '.ico'='image/x-icon'; '.wav'='audio/wav';
+    '.glb'='model/gltf-binary'; '.gltf'='model/gltf+json';
+    '.stl'='application/octet-stream'; '.obj'='text/plain; charset=utf-8'
+}
+
+while ($listener.IsListening) {
+    $ctx = $listener.GetContext()
+    try {
+        $url = $ctx.Request.Url.AbsolutePath.TrimStart('/')
+        if ($url -eq '') { $url = 'index.html' }
+        $path = Join-Path $root $url.Replace('/', '\')
+        if (Test-Path $path -PathType Leaf) {
+            $ext = [System.IO.Path]::GetExtension($url).ToLower()
+            $ct = if ($mime.ContainsKey($ext)) { $mime[$ext] } else { 'application/octet-stream' }
+            $bytes = [System.IO.File]::ReadAllBytes($path)
+            $ctx.Response.ContentType = $ct
+            $ctx.Response.ContentLength64 = $bytes.Length
+            $ctx.Response.Headers.Add('Cache-Control', 'no-store, must-revalidate')
+            $ctx.Response.Headers.Add('Pragma', 'no-cache')
+            $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+        } else {
+            $ctx.Response.StatusCode = 404
+            $msg = [System.Text.Encoding]::UTF8.GetBytes('Not found')
+            $ctx.Response.OutputStream.Write($msg, 0, $msg.Length)
+        }
+    } catch {
+        try { $ctx.Response.StatusCode = 500 } catch { }
+    }
+    $ctx.Response.OutputStream.Close()
+}
