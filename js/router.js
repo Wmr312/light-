@@ -22,8 +22,12 @@
     for (var i = 0; i < items.length; i++) {
       items[i].classList.toggle('active', items[i].getAttribute('href') === '#/' + current);
     }
+    // 顶栏导航小图标（只注入一次，幂等）
+    if (LG.decorateNavIcons) LG.decorateNavIcons();
     try {
       cleanup = mod.render(view) || null;
+      // 统一给卡片标题补功能小图标（app.js 提供，路由先于其加载时自动跳过）
+      if (LG.decorateIcons) LG.decorateIcons(view);
     } catch (err) {
       console.error('route render failed:', err);
       view.innerHTML = '<div class="card" style="margin:24px"><div class="card-title">Error</div><p>' + err.message + '</p></div>';
