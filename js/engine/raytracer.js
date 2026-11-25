@@ -709,7 +709,7 @@ class RayTracer {
     };
   }
 
-  // ---- 批量追踪 ----
+  // ---- 批量追踪（同步，Worker 用） ----
   simulate(onProgress) {
     var rays = this._generateRays();
     var total = rays.length;
@@ -720,15 +720,14 @@ class RayTracer {
       ledger: { output: 0, side: 0, absorbed: 0, residual: 0 }
     };
 
-    var BATCH = 200;
-    // 轨迹可视化配额：仅抽 visRays 条光线采集 segments（统计指标始终基于全部 numRays），
-    // 避免万级光线 × 多段反弹产生超大 segments 数组拖垮传输与渲染（worker 曾有 6000 段静默丢弃上限）。
-    // 按等间隔抽取而非取前 N 条：光线按入射三角面顺序生成，取前 N 条会全部集中在最初几个三角面，
-    // 多面入射时可视光线的空间分布严重偏斜；等间隔抽取可覆盖整个入射面与全部光线。
+    // 自适应批次：总光线数 ÷ 50（至少 50），保证无论 500 条还是 500000 条都有 ~50 次进度更新
+    var BATCH = Math.max(50, Math.floor(total / 50));
     var visLimit = Math.min(this.visRays, total);
     var visIdx = [];
     for (var v = 0; v < visLimit; v++) visIdx.push(Math.floor(v * total / visLimit));
     var visPtr = 0;
+
+    if (typeof onProgress === 'function') onProgress(0, total);
     for (var i = 0; i < total; i++) {
       var r = this._traceRay(rays[i]);
       if (visPtr < visIdx.length && i === visIdx[visPtr]) {
@@ -750,16 +749,81 @@ class RayTracer {
       results.ledger.absorbed += r.absorbedE;
       results.ledger.residual += r.residualE;
       if (r.bounces > results.maxBounces) results.maxBounces = r.bounces;
-      if ((i + 1) % BATCH === 0 && typeof onProgress === 'function') {
-        onProgress(i + 1, total);
-      }
+      if ((i + 1) % BATCH === 0 && typeof onProgress === 'function') onProgress(i + 1, total);
     }
+    if (typeof onProgress === 'function') onProgress(total, total);
 
     results.successRate = total > 0 ? (results.success / total * 100).toFixed(1) : '0.0';
     results.avgOutputIntensity = results.success > 0
       ? (results.totalIntensity / results.success).toFixed(3) : '0.000';
-    results.visRays = visLimit;   // 实际采集轨迹的光线数（3D 预览用）
+    results.visRays = visLimit;
     return results;
+  }
+
+  /**
+   * 异步版 simulate：主线程 fallback 专用。
+   * 每批跑完 setTimeout(0) 让出主线程 → 浏览器能重绘进度条。
+   * Worker 模式仍用同步 simulate（postMessage 已天然跨线程让步）。
+   */
+  _simulateAsync(onProgress) {
+    var self = this;
+    return new Promise(function (resolve) {
+      var rays = self._generateRays();
+      var total = rays.length;
+      var results = {
+        total: 0, success: 0, escaped: 0, exhausted: 0, segments: [],
+        totalIntensity: 0, maxBounces: 0,
+        outputHits: [], sideHits: [],
+        ledger: { output: 0, side: 0, absorbed: 0, residual: 0 }
+      };
+
+      var BATCH = Math.max(50, Math.floor(total / 50));
+      var visLimit = Math.min(self.visRays, total);
+      var visIdx = [];
+      for (var v = 0; v < visLimit; v++) visIdx.push(Math.floor(v * total / visLimit));
+      var i = 0, visPtr = 0;
+
+      if (typeof onProgress === 'function') onProgress(0, total);
+
+      function step() {
+        var end = Math.min(i + BATCH, total);
+        for (; i < end; i++) {
+          var r = self._traceRay(rays[i]);
+          if (visPtr < visIdx.length && i === visIdx[visPtr]) {
+            visPtr++;
+            for (var j = 0; j < r.segments.length; j++) results.segments.push(r.segments[j]);
+          }
+          results.total++;
+          if (r.hitOutput) {
+            results.success++;
+            results.totalIntensity += r.finalIntensity;
+            results.ledger.output += r.outHit.i;
+            results.outputHits.push(r.outHit);
+          } else if (r.escaped) {
+            results.escaped++;
+            results.ledger.side += r.sideHit ? r.sideHit.i : 0;
+            if (r.sideHit) results.sideHits.push(r.sideHit);
+          } else {
+            results.exhausted++;
+          }
+          results.ledger.absorbed += r.absorbedE;
+          results.ledger.residual += r.residualE;
+          if (r.bounces > results.maxBounces) results.maxBounces = r.bounces;
+        }
+        if (i < total) {
+          if (typeof onProgress === 'function') onProgress(i, total);
+          setTimeout(step, 0);   // 让出主线程 → 浏览器重绘进度条
+        } else {
+          if (typeof onProgress === 'function') onProgress(total, total);
+          results.successRate = total > 0 ? (results.success / total * 100).toFixed(1) : '0.0';
+          results.avgOutputIntensity = results.success > 0
+            ? (results.totalIntensity / results.success).toFixed(3) : '0.000';
+          results.visRays = visLimit;
+          resolve(results);
+        }
+      }
+      step();
+    });
   }
 
   // ---- 聚合分析：热图 / 轴向分布 / 角度分布 / 均匀性指标 ----
