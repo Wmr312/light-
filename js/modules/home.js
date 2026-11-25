@@ -1,7 +1,7 @@
 /**
- * LG.Modules.home — Home / 启动页
- * 项目列表（新建 / 打开 / 重命名 / 删除 / 导出 / 导入 JSON）
- * 入口：顶部导航 Home 或 hash #/home
+ * LG.Modules.home — Home / 启动页 v2
+ * 按工作区（Workspace）展示卡片：一个卡片 = 一个 .lgv.json 文件 / 一个开发者工程
+ * 点击卡片进入后，工作区内所有盘并排显示在 model 页 3D 场景里（多盘视图）
  */
 (function () {
   'use strict';
@@ -17,205 +17,146 @@
     return y + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
 
-  // ---- 3D 实物预览：共享离屏 WebGLRenderer + Three.js 真实渲染 ----
-  // 参数化项目：LG.Geometry.build → BufferGeometry → 归一化 → MeshPhongMaterial + 边线
-  // 导入模型：退化到 canvas 2D 简化方块 + 文件名（home 页不重新解析 STEP/STL）
+  // ---- 3D 预览 ----
   var offRenderer = null, offScene = null, offCamera = null, offMesh = null;
-
   function ensureOffscreen() {
     if (offRenderer) return;
-    var TH = window.THREE;
-    if (!TH) return;
+    var TH = window.THREE; if (!TH) return;
     offRenderer = new TH.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: false });
-    offRenderer.setPixelRatio(1);  // 低分辨率即可（卡片 canvas 本身就小）
+    offRenderer.setPixelRatio(1);
     offScene = new TH.Scene();
-    offScene.background = new TH.Color(0x0d1b2a);
-    // 斜视角相机（偏右上 45° 俯视）
+    offScene.background = new TH.Color(0xdcdcdc);
     offCamera = new TH.PerspectiveCamera(45, 1, 0.01, 1000);
     offCamera.position.set(3.2, 2.6, 3.2);
     offCamera.lookAt(0, 0, 0);
-    // 灯光：跟主 viewer 一致
-    offScene.add(new TH.AmbientLight(0xffffff, 0.7));
-    var d1 = new TH.DirectionalLight(0xffffff, 0.8); d1.position.set(5, 10, 7); offScene.add(d1);
-    var d2 = new TH.DirectionalLight(0x88aaff, 0.3); d2.position.set(-4, -2, -4); offScene.add(d2);
+    offScene.add(new TH.AmbientLight(0xffffff, 0.85));
+    var d1 = new TH.DirectionalLight(0xffffff, 0.75); d1.position.set(5, 10, 7); offScene.add(d1);
+    var d2 = new TH.DirectionalLight(0xa8c8ff, 0.25); d2.position.set(-4, -2, -4); offScene.add(d2);
   }
-
   function disposeOffscreen() {
     if (offMesh) { offScene.remove(offMesh); offMesh.traverse(function (o) { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); offMesh = null; }
   }
-
-  // 参数化几何体 → THREE.BufferGeometry（从 mm 轴向 Z：0→L 归一化到世界中心，旋转 Z 轴对齐水平）
   function buildParametricMesh(g) {
     var TH = window.THREE;
-    var d1 = Math.max(0.4, +g.d1 || 3);
-    var d2 = Math.max(0.4, +g.d2 || d1);
-    var L = Math.max(1, +g.length || 30);
-
-    // 按最短边（直径）缩放，确保圆柱粗细在画面里有足够像素
+    var d1 = Math.max(0.4, +g.d1 || 3), d2 = Math.max(0.4, +g.d2 || d1), L = Math.max(1, +g.length || 30);
     var maxCross = Math.max(d1, d2);
-    var scaleByDia = 0.9 / maxCross;   // 直径缩放到 ~0.9 单位
-    var scaleByLen = 2.0 / L;          // 长度缩放到 ~2.0 单位
-    var scale = Math.min(scaleByDia, scaleByLen);
-    if (scale > 1.5) scale = 1.5;
+    var scale = Math.min(0.9 / maxCross, 2.0 / L, 1.5);
     if (scale < 0.01) scale = 0.01;
-
-    // 标准 CylinderGeometry（绕 Y 轴）→ 旋转到 Z 轴（LG.Geometry 默认轴向）
     var geo = new TH.CylinderGeometry(d1 / 2 * scale, d2 / 2 * scale, L * scale, 48, 1, false);
-    geo.rotateX(Math.PI / 2);          // Y → Z
-    geo.computeBoundingBox();
-
-    // 居中
-    var size = new TH.Vector3(); var center = new TH.Vector3();
+    geo.rotateX(Math.PI / 2); geo.computeBoundingBox();
+    var size = new TH.Vector3(), center = new TH.Vector3();
     geo.boundingBox.getSize(size); geo.boundingBox.getCenter(center);
     geo.translate(-center.x, -center.y, -center.z);
-
-    // 旋转：Z(长度) → X(水平)，再绕 Z 倾斜 30°，让长度在画面里斜向展开，两端端面可见
-    geo.rotateY(-Math.PI / 2);
-    geo.rotateZ(Math.PI / 6);
-
-    // 材质：跟主 viewer 统一（半透明青绿色）
+    geo.rotateY(-Math.PI / 2); geo.rotateZ(Math.PI / 6);
     var mat = new TH.MeshPhongMaterial({
       color: 0x218D83, transparent: true, opacity: 0.5, depthWrite: false,
       side: TH.DoubleSide, shininess: 45, specular: 0x0A0A0A
     });
     var mesh = new TH.Mesh(geo, mat);
-    // 边线
-    var wire = new TH.LineSegments(
-      new TH.EdgesGeometry(geo, 8),
-      new TH.LineBasicMaterial({ color: 0x136B63, transparent: true, opacity: 0.75, depthTest: false })
-    );
-    mesh.add(wire);
+    mesh.add(new TH.LineSegments(new TH.EdgesGeometry(geo, 8),
+      new TH.LineBasicMaterial({ color: 0x136B63, transparent: true, opacity: 0.75, depthTest: false })));
     mesh.renderOrder = 1;
     return mesh;
   }
-
-  // 导入模型：用真实网格（如果 meshCache 或 geometry._mesh 可用）渲染 3D，
-  // 否则退化为 canvas 2D 简化方块占位。
   function buildImportedMesh(proj) {
     var TH = window.THREE;
-    // 优先取内存缓存（已反序列化好的 TypedArray），否则从持久化 geometry._mesh 反序列化
     var cached = LG.state.meshCache[proj.id];
     if (!cached || !cached.positions || !cached.positions.length) {
       if (LG.restoreMeshFromProject) LG.restoreMeshFromProject(proj);
       cached = LG.state.meshCache[proj.id];
     }
     if (!cached || !cached.positions || !cached.positions.length) return null;
-
     var geo = new TH.BufferGeometry();
-    geo.setAttribute('position', new TH.BufferAttribute(cached.positions, 3));
-    if (cached.indices && cached.indices.length) geo.setIndex(new TH.BufferAttribute(cached.indices, 1));
-    geo.computeVertexNormals();
-    geo.computeBoundingBox();
-
-    // 归一化到 ~2.0 单位立方体内，确保 home 预览里大小一致
-    var bb = geo.boundingBox;
-    var size = new TH.Vector3(); bb.getSize(size);
+    // 克隆顶点数组：下方的 translate / scale / rotate 会原地改写，
+    // 直接引用 meshCache 会把缓存逐次旋转缩放 → 每次切换页面预览角度都不同
+    var posClone = (cached.positions instanceof Float32Array) ? cached.positions.slice() : new Float32Array(cached.positions);
+    geo.setAttribute('position', new TH.BufferAttribute(posClone, 3));
+    if (cached.indices && cached.indices.length) {
+      var idxClone = (cached.indices instanceof Uint32Array) ? cached.indices.slice() : new Uint32Array(cached.indices);
+      geo.setIndex(new TH.BufferAttribute(idxClone, 1));
+    }
+    geo.computeVertexNormals(); geo.computeBoundingBox();
+    var bb = geo.boundingBox, size = new TH.Vector3(); bb.getSize(size);
     var maxDim = Math.max(size.x, size.y, size.z, 0.01);
-    var scale = 2.0 / maxDim;
-    var center = new TH.Vector3(); bb.getCenter(center);
+    var scale = 2.0 / maxDim, center = new TH.Vector3(); bb.getCenter(center);
     geo.translate(-center.x * scale, -center.y * scale, -center.z * scale);
     geo.scale(scale, scale, scale);
     geo.computeBoundingBox();
-
-    // 旋转：Z(长度) → X(水平)，再绕 Z 倾斜 30°
-    var bb2 = new TH.Box3().setFromBufferAttribute(geo.attributes.position);
-    var size2 = new TH.Vector3(); bb2.getSize(size2);
-    // 让 mesh 的最长轴对齐 X 轴
-    var rotY = 0;
+    var rotY = 0, bb2 = new TH.Box3().setFromBufferAttribute(geo.attributes.position), size2 = new TH.Vector3();
+    bb2.getSize(size2);
     if (size2.z > size2.x) rotY = -Math.PI / 2;
     if (rotY) geo.rotateY(rotY);
-    geo.rotateZ(Math.PI / 6);
-    geo.computeBoundingBox();
-
+    geo.rotateZ(Math.PI / 6); geo.computeBoundingBox();
     var mat = new TH.MeshPhongMaterial({
       color: 0x218D83, transparent: true, opacity: 0.5, depthWrite: false,
       side: TH.DoubleSide, shininess: 45, specular: 0x0A0A0A
     });
     var mesh = new TH.Mesh(geo, mat);
-    var wire = new TH.LineSegments(
-      new TH.EdgesGeometry(geo, 15),
-      new TH.LineBasicMaterial({ color: 0x136B63, transparent: true, opacity: 0.75, depthTest: false })
-    );
-    mesh.add(wire);
+    mesh.add(new TH.LineSegments(new TH.EdgesGeometry(geo, 15),
+      new TH.LineBasicMaterial({ color: 0x136B63, transparent: true, opacity: 0.75, depthTest: false })));
     mesh.renderOrder = 1;
     return mesh;
   }
-
-  // canvas 2D 简化方块占位（持久化网格不可用时的兜底）
-  function drawImportedPlaceholder(canvas, fileName) {
+  function drawPlaceholder(canvas, hint) {
     var ctx = canvas.getContext('2d');
     var W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
-    var grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, '#0d1b2a'); grad.addColorStop(1, '#1b263b');
-    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
-
-    var cx = W / 2, cy = H / 2 + 4;
-    var bw = Math.min(W, H) * 0.36; var bh = bw * 0.68;
-    ctx.lineWidth = 1.5;
-    ctx.fillStyle = '#136B63'; ctx.strokeStyle = '#06C864';
-    ctx.beginPath(); ctx.moveTo(cx - bw, cy - bh); ctx.lineTo(cx - bw * 1.3, cy - bh + bw * 0.45);
-    ctx.lineTo(cx - bw * 0.3, cy + bw * 0.45); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#15998B';
-    ctx.beginPath(); ctx.moveTo(cx - bw, cy - bh); ctx.lineTo(cx - bw * 1.3, cy - bh + bw * 0.45);
-    ctx.lineTo(cx + bw * 0.7, cy - bh + bw * 0.45); ctx.lineTo(cx, cy - bh); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#0E584F';
-    ctx.beginPath(); ctx.moveTo(cx, cy - bh); ctx.lineTo(cx + bw * 0.7, cy - bh + bw * 0.45);
-    ctx.lineTo(cx + bw * 0.7, cy + bw * 0.45); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill(); ctx.stroke();
-
-    var base = (fileName || '').replace(/\\/g, '/');
-    var short = base.split('/').pop() || 'model';
-    if (short.length > 16) short = short.slice(-14);
-    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.font = 'bold 12px system-ui, sans-serif';
-    ctx.textAlign = 'center'; ctx.fillText(short, cx, H - 6);
+    // 浅灰底占位（与 3D 预览背景一致）
+    ctx.fillStyle = '#dcdcdc'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#8A97A5'; ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(hint || 'Empty', W / 2, H / 2);
   }
-
-  // 真正的入口：为每张卡片 canvas 渲染 3D 实物
-  function renderPreview(canvas, project) {
+  function renderPreview(canvas, plate) {
     var TH = window.THREE;
-    if (!TH) { drawImportedPlaceholder(canvas, (project.geometry || {}).fileName); return; }
-
-    var g = project.geometry || {};
+    if (!TH) { drawPlaceholder(canvas, ''); return; }
+    var g = plate.geometry || {};
     ensureOffscreen();
-    if (!offRenderer) { drawImportedPlaceholder(canvas, g.fileName); return; }
-
+    if (!offRenderer) { drawPlaceholder(canvas, g.fileName); return; }
     var mesh = null;
-    if (g.fileName) {
-      // 导入模型：优先用真实网格，不可用时才退化为占位图
-      try { mesh = buildImportedMesh(project); } catch (e) { mesh = null; }
-      if (!mesh) { drawImportedPlaceholder(canvas, g.fileName); return; }
-    } else {
-      // 参数化模型：直接构建
-      try { mesh = buildParametricMesh(g); } catch (e) { mesh = null; }
-      if (!mesh) { drawImportedPlaceholder(canvas, ''); return; }
-    }
-
+    var hasGeo = (g.shape && g.shape !== '') || g.fileName;
+    if (!hasGeo) { drawPlaceholder(canvas, '空盘'); return; }
+    try {
+      if (g.fileName) mesh = buildImportedMesh(plate);
+      else mesh = buildParametricMesh(g);
+    } catch (e) { mesh = null; }
+    if (!mesh) { drawPlaceholder(canvas, g.fileName || ''); return; }
     try {
       disposeOffscreen();
-      offMesh = mesh;
-      offScene.add(offMesh);
-
+      offMesh = mesh; offScene.add(offMesh);
       var W = canvas.width, H = canvas.height;
       offRenderer.setSize(W, H, false);
+
+      // 包围盒 + 居中 + 按画面尺寸计算相机距离
       var bb = new TH.Box3().setFromObject(offMesh);
-      var size = new TH.Vector3(); bb.getSize(size);
+      var size = new TH.Vector3(), center = new TH.Vector3();
+      bb.getSize(size); bb.getCenter(center);
       var maxDim = Math.max(size.x, size.y, size.z, 0.1);
-      var camDist = maxDim * 2.2;
-      offCamera.position.set(camDist * 0.85, camDist * 0.95, camDist * 0.55);
+      // 把网格中心平移到原点，相机以原点为 lookAt 点
+      offMesh.position.sub(center);
+
+      var fov = 45;
+      var aspect = W / H;
+      // 让 maxDim × 1.04 占画面最短边的 96% （模型几乎填满画面，参考图片比例）
+      var tanHalfFov = Math.tan(fov * Math.PI / 180 / 2);
+      var distByH = (maxDim * 1.04 / 2) / tanHalfFov;
+      var distByW = (maxDim * aspect * 1.04 / 2) / tanHalfFov;
+      var camDist = Math.max(distByH, distByW);
+
+      // 固定视角：方向向量恒定（右上 45° 俯视 + 30° 偏转），只按模型大小调整距离，
+      // 保证所有工作区卡片的预览角度完全一致（模型归一化统一：长轴沿 X、绕 Z 抬 30°）
+      var viewDir = new TH.Vector3(0.85, 0.95, 0.55).normalize();
+      offCamera.position.copy(viewDir.multiplyScalar(camDist));
       offCamera.lookAt(0, 0, 0);
-      offCamera.fov = 50;
-      offCamera.aspect = W / H;
+      offCamera.fov = fov; offCamera.aspect = aspect;
       offCamera.updateProjectionMatrix();
       offRenderer.render(offScene, offCamera);
-
-      var cardCtx = canvas.getContext('2d');
-      cardCtx.clearRect(0, 0, W, H);
+      var cardCtx = canvas.getContext('2d'); cardCtx.clearRect(0, 0, W, H);
       cardCtx.drawImage(offRenderer.domElement, 0, 0);
-    } catch (e) {
-      console.warn('[home] 预览渲染失败', e);
-      drawImportedPlaceholder(canvas, g.fileName || '');
-    } finally {
-      disposeOffscreen();
+    } catch (e) { drawPlaceholder(canvas, g.fileName || ''); }
+    finally {
+      // 还原网格的 position，避免累积偏移
+      if (offMesh) { offMesh.position.set(0, 0, 0); disposeOffscreen(); }
     }
   }
 
@@ -230,96 +171,126 @@
 
   function render() {
     refreshProjectIntoView();
-    var list = LG.Store.list();
-    var active = LG.Store.active();
+    var wsList = LG.Store.listWorkspaces();
+    var activeWs = LG.Store.activeWorkspace();
 
     var html = '<section class="home-page">'
       + '<div class="home-hero">'
       + '<h1>' + t('home.title', '导光柱验证平台') + '</h1>'
-      + '<p class="home-sub">' + t('home.sub', '管理你的导光板设计项目，选择一个项目继续，或新建一个') + '</p>'
+      + '<p class="home-sub">' + t('home.sub', '管理你的导光板设计工作区，每个工作区可包含多个仿真盘') + '</p>'
       + '<div class="home-actions">'
-      + '<button id="home-new" class="btn btn-primary">+ ' + t('home.new', '新建项目') + '</button>'
-      + '<button id="home-import" class="btn">' + t('home.import', '导入文件') + '</button>'
+      + '<button id="home-new-ws" class="btn btn-primary">+ ' + t('home.newWs', '新建工作区') + '</button>'
+      + '<button id="home-new-plate" class="btn">' + t('home.newPlate', '新建仿真盘') + '</button>'
+      + '<button id="home-import" class="btn">' + t('home.import', '导入 .lgv.json') + '</button>'
       + '<button id="home-export-all" class="btn">' + t('home.exportAll', '全部导出') + '</button>'
       + '</div>'
       + '</div>';
 
-    if (!list.length) {
+    if (!wsList.length) {
       html += '<div class="home-empty">'
         + '<div class="home-empty-icon">📁</div>'
-        + '<p>' + t('home.empty', '还没有项目，点击上方按钮创建第一个项目') + '</p>'
+        + '<p>' + t('home.empty', '还没有工作区，点击上方按钮创建第一个') + '</p>'
         + '</div>';
     } else {
       html += '<div class="home-grid">';
-      for (var i = 0; i < list.length; i++) {
-        var p = list[i];
-        var isActive = active && active.id === p.id;
-        html += '<div class="home-card' + (isActive ? ' is-active' : '') + '" data-id="' + p.id + '">'
+      for (var i = 0; i < wsList.length; i++) {
+        var ws = wsList[i];
+        var isActive = activeWs && activeWs.id === ws.id;
+        var plates = ws.plates || [];
+        var totalRecords = 0;
+        var hasAnyGeo = false;
+        for (var p = 0; p < plates.length; p++) {
+          totalRecords += (plates[p].records && plates[p].records.length) || 0;
+          var gg = plates[p].geometry || {};
+          if (gg.fileName || (gg.shape && gg.shape !== '')) hasAnyGeo = true;
+        }
+        html += '<div class="home-card' + (isActive ? ' is-active' : '') + '" data-ws="' + ws.id + '">'
+          // 3D 预览置顶（白底），保证各卡片上下对齐
+          + '<canvas class="home-preview" width="280" height="140" data-ws="' + ws.id + '"></canvas>'
           + '<div class="home-card-head">'
-          + '<span class="home-card-lock" title="' + t('home.lockedTip', '已锁定') + '">' + (p.locked ? '🔒' : '') + '</span>'
-          + '<span class="home-card-name">' + (p.name || t('home.untitled', '未命名项目')) + '</span>'
+          + '<span class="home-card-name">' + (ws.name || t('home.untitledWs', '未命名工作区')) + '</span>'
           + (isActive ? '<span class="home-card-badge">' + t('home.current', '当前') + '</span>' : '')
           + '</div>'
-          + '<div class="home-card-meta">'
-          + '<span>📐 ' + (p.geometry && p.geometry.fileName ? p.geometry.fileName : (
-              (p.geometry && p.geometry.shape) ? ('param:' + p.geometry.shape) : '-')) + '</span>'
-          + '<span>📊 ' + ((p.records && p.records.length) || 0) + ' ' + t('home.runs', '次仿真') + '</span>'
-          + '</div>'
-          + '<div class="home-card-time">' + fmtTime(p.updatedAt || p.createdAt) + '</div>'
+          // 操作按钮紧跟项目名，避免被下方 3D 预览遮挡
           + '<div class="home-card-actions">'
           + '<button class="home-act home-act-open" data-act="open">' + t('home.open', '打开') + '</button>'
           + '<button class="home-act home-act-rename" data-act="rename">' + t('home.rename', '重命名') + '</button>'
-          + '<button class="home-act home-act-export" data-act="export">' + t('home.export', '导出') + '</button>'
-          + '<button class="home-act home-act-del" data-act="del" ' + (p.locked ? 'disabled' : '') + '>' + t('home.delete', '删除') + '</button>'
+          + '<button class="home-act home-act-export" data-act="export" title="导出为 .lgv.json，可再次导入">导出</button>'
+          + '<button class="home-act home-act-del" data-act="del">' + t('home.delete', '删除') + '</button>'
           + '</div>'
-          + '<canvas class="home-preview" width="240" height="90" data-id="' + p.id + '"></canvas>'
-          + '</div>';
+          + '<div class="home-card-meta">'
+          + '<span>📦 ' + plates.length + ' ' + t('home.plates', '个盘') + '</span>'
+          + '<span>📊 ' + totalRecords + ' ' + t('home.runs', '次仿真') + '</span>'
+          + (ws.owner ? '<span>👤 ' + ws.owner + '</span>' : '')
+          + '</div>'
+          + '<div class="home-card-time">' + fmtTime(ws.updatedAt || ws.createdAt) + '</div>';
+
+        // 工作区内盘列表
+        if (plates.length) {
+          html += '<div class="home-ws-plates">';
+          var maxShow = 3;
+          for (var p2 = 0; p2 < Math.min(maxShow, plates.length); p2++) {
+            var pl = plates[p2];
+            var g2 = pl.geometry || {};
+            var info = g2.fileName ? g2.fileName : (g2.shape ? ('param:' + g2.shape) : t('home.emptyPlate', '空盘'));
+            html += '<div class="home-ws-plate-row"><span>▸</span> '
+              + '<span class="ws-plate-name">' + (pl.name || t('home.untitledPlate', '未命名盘')) + '</span>'
+              + '<span class="ws-plate-info">' + info + '</span></div>';
+          }
+          if (plates.length > maxShow) {
+            html += '<div class="home-ws-plate-more">+ ' + (plates.length - maxShow) + ' ' + t('home.morePlates', '个盘') + '</div>';
+          }
+          html += '</div>';
+        } else {
+          html += '<div class="home-ws-empty">' + t('home.wsEmpty', '工作区内还没有仿真盘') + '</div>';
+        }
+
+        html += '</div>';
       }
       html += '</div>';
     }
     html += '</section>';
-
     document.getElementById('view').innerHTML = html;
-    bind(list);
+    bind(wsList);
   }
 
-  function bind(list) {
+  function bind(wsList) {
     var $ = function (id) { return document.getElementById(id); };
-
-    $('home-new').addEventListener('click', function () {
-      var name = prompt(t('home.newName', '输入新项目名称'), '');
+    $('home-new-ws').addEventListener('click', function () {
+      var name = prompt(t('home.newWsName', '输入工作区名称'), '');
       if (name === null) return;
-      var p = LG.Store.create(name && name.trim() ? name.trim() : undefined);
+      LG.Store.createWorkspace(name && name.trim() ? name.trim() : undefined);
+      refreshProjectIntoView();
+      render();
+    });
+    $('home-new-plate').addEventListener('click', function () {
+      var ws = LG.Store.activeWorkspace();
+      if (!ws) { alert(t('home.needWs', '请先新建或打开一个工作区')); return; }
+      var p = LG.Store.create(undefined, ws.id);
       refreshProjectIntoView();
       location.hash = '#/model';
     });
-
     $('home-import').addEventListener('click', function () {
       var input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json,application/json';
+      input.type = 'file'; input.accept = '.json,.lgv.json,application/json';
       input.addEventListener('change', function () {
-        var f = input.files && input.files[0];
-        if (!f) return;
+        var f = input.files && input.files[0]; if (!f) return;
         var reader = new FileReader();
         reader.onload = function () {
           try {
-            var n = LG.Store.importJSON(reader.result);
+            var r = LG.Store.importJSON(reader.result);
             refreshProjectIntoView();
-            alert(t('home.importOk', '已导入 {n} 个项目').replace('{n}', n));
+            alert(t('home.importOk2', '已导入 {w} 个工作区 / {p} 个盘').replace('{w}', r.wsCount).replace('{p}', r.plateCount));
             render();
-          } catch (e) {
-            alert(t('home.importFail', '导入失败：') + e.message);
-          }
+          } catch (e) { alert(t('home.importFail', '导入失败：') + e.message); }
         };
         reader.readAsText(f);
       });
       input.click();
     });
-
     $('home-export-all').addEventListener('click', function () {
-      if (!LG.Store.list().length) { alert(t('home.empty', '还没有项目')); return; }
-      LG.Store.exportJSON();
+      if (!LG.Store.listWorkspaces().length) { alert(t('home.empty', '还没有工作区')); return; }
+      LG.Store.exportAll();
     });
 
     // 卡片点击
@@ -327,58 +298,68 @@
     for (var i = 0; i < cards.length; i++) {
       cards[i].addEventListener('click', function (e) {
         var actBtn = e.target.closest('.home-act');
-        var id = this.getAttribute('data-id');
+        var wsId = this.getAttribute('data-ws');
         if (actBtn) {
           e.stopPropagation();
-          var act = actBtn.getAttribute('data-act');
-          handleCardAct(id, act);
+          handleCardAct(wsId, actBtn.getAttribute('data-act'));
           return;
         }
-        openProject(id);
+        openWorkspace(wsId);
       });
     }
 
-    // 渲染卡片 3D 预览（canvas 2D）
+    // 预览：渲染每个工作区里最新的那个盘
     var previews = document.querySelectorAll('.home-preview');
     for (var pi = 0; pi < previews.length; pi++) {
       var cv = previews[pi];
-      var pid = cv.getAttribute('data-id');
-      var proj = LG.Store.get(pid);
-      if (proj) renderPreview(cv, proj);
+      var wsId = cv.getAttribute('data-ws');
+      var ws2 = LG.Store.listWorkspaces().find(function (w) { return w.id === wsId; });
+      if (!ws2 || !ws2.plates || !ws2.plates.length) continue;
+      // 找最后更新的 plate 来展示（比默认第一个更有代表性）
+      var best = ws2.plates[0], bestTs = best.updatedAt || best.createdAt || 0;
+      for (var p = 1; p < ws2.plates.length; p++) {
+        var ts = ws2.plates[p].updatedAt || ws2.plates[p].createdAt || 0;
+        if (ts > bestTs) { best = ws2.plates[p]; bestTs = ts; }
+      }
+      renderPreview(cv, best);
     }
   }
 
-  function openProject(id) {
-    LG.Store.setActive(id);
+  function openWorkspace(wsId) {
+    var ws = LG.Store.listWorkspaces().find(function (w) { return w.id === wsId; });
+    if (!ws) return;
+    LG.Store.setActiveWorkspace(wsId);
+    // 进入 model 页前确保激活一个盘
+    if (ws.plates.length) {
+      var latest = ws.plates[0], latestTs = latest.updatedAt || latest.createdAt || 0;
+      for (var p = 1; p < ws.plates.length; p++) {
+        var ts = ws.plates[p].updatedAt || ws.plates[p].createdAt || 0;
+        if (ts > latestTs) { latest = ws.plates[p]; latestTs = ts; }
+      }
+      LG.Store.setActive(latest.id);
+    } else {
+      // 空工作区 → 自动建一个盘让用户开始
+      LG.Store.create(undefined, wsId);
+    }
     refreshProjectIntoView();
     location.hash = '#/model';
   }
 
-  function handleCardAct(id, act) {
-    var p = LG.Store.get(id);
-    if (!p) return;
+  function handleCardAct(wsId, act) {
+    var ws = LG.Store.listWorkspaces().find(function (w) { return w.id === wsId; });
+    if (!ws) return;
     if (act === 'open') {
-      openProject(id);
+      openWorkspace(wsId);
     } else if (act === 'rename') {
-      var name = prompt(t('home.renameName', '重命名项目'), p.name || '');
-      if (name === null) return;
-      name = name.trim();
-      if (!name) return;
-      LG.Store.rename(id, name);
+      var name = prompt(t('home.renameWsName', '重命名工作区'), ws.name || '');
+      if (!name || !name.trim()) return;
+      LG.Store.renameWorkspace(wsId, name.trim());
       render();
     } else if (act === 'export') {
-      // 导出单个项目：临时抽出 projects=[p] 调 exportJSON，再还原
-      var blobP = { app: 'light-guide-validator', version: 1, projects: [p] };
-      var blob = new Blob([JSON.stringify(blobP, null, 2)], { type: 'application/json' });
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = (p.name || 'project') + '.lgv.json';
-      a.click();
-      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      LG.Store.exportWorkspace(wsId);
     } else if (act === 'del') {
-      if (p.locked) { alert(t('home.lockedDel', '项目已锁定，无法删除')); return; }
-      if (!confirm(t('home.delConfirm', '确定删除「{name}」吗？此操作无法撤销').replace('{name}', p.name || ''))) return;
-      LG.Store.remove(id);
+      if (!confirm(t('home.delWsConfirm', '确定删除工作区「{name}」及其全部 {n} 个盘？').replace('{name}', ws.name || '').replace('{n}', ws.plates.length))) return;
+      LG.Store.removeWorkspace(wsId);
       refreshProjectIntoView();
       render();
     }
