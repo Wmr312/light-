@@ -1,16 +1,18 @@
 /**
  * LG.Modules.simulate — 仿真计算页
- * 左栏：端面设定（逐颗灯珠配置：增加/移除/拾取入射面+出射面 / 自动检测 / 交换 / 清除）+ 仿真选项；右侧：3D 视图 + 进度 + 结果浮动面板（含能量账本）
+ * 左栏：端面设定（逐颗灯珠配置：增加/移除/拾取入射面+出射面 / 自动检测 / 交换 / 清除）+ 仿真选项；右侧：3D 视图 + 进度 + 结果浮动面板（含总评估）
  */
 (function () {
   'use strict';
 
   var $ = function (id) { return document.getElementById(id); };
+  // 颜色与 3D 光线路径一致：success #dc143c（出射成功）/ escape #ff8c00（侧面逸出）/ in-body #4b0082；
+  // absorbed、residual 不对应可见光路，用中性色
   var LEDGER_COLORS = {
-    output:   { color: '#22c55e', key: 'sim.ledger.output' },
-    side:     { color: '#f59e0b', key: 'sim.ledger.side' },
-    absorbed: { color: '#94a3b8', key: 'sim.ledger.absorbed' },
-    residual: { color: '#ef4444', key: 'sim.ledger.residual' }
+    output:   { color: '#dc143c', key: 'sim.ledger.output' },
+    side:     { color: '#ff8c00', key: 'sim.ledger.side' },
+    absorbed: { color: '#4b0082', key: 'sim.ledger.absorbed' },
+    residual: { color: '#94a3b8', key: 'sim.ledger.residual' }
   };
 
   function render(el) {
@@ -101,13 +103,13 @@
       else showSpotSectionFrom();
     });
     // 光线数控件：调整后实时保存并自动重跑（debounce）
-    var rays0 = LG.state.project.source.numRays || 1000;
+    var rays0 = LG.state.project.source.numRays || 20000;
     $('s-rays').value = rays0; $('s-rays-r').value = Math.min(20000, rays0);
     var raysTimer = null;
     function onRaysInput(fromRange) {
       if (fromRange) $('s-rays').value = $('s-rays-r').value;
       else $('s-rays-r').value = Math.min(20000, Math.max(10, parseInt($('s-rays').value) || 10));
-      var v = Math.max(10, parseInt($('s-rays').value) || 1000);
+      var v = Math.max(10, parseInt($('s-rays').value) || 20000);
       LG.Store.updateActive({ source: Object.assign({}, LG.state.project.source, { numRays: v }) });
       updateOptHint();
       clearTimeout(raysTimer);
@@ -168,7 +170,7 @@
     // ---- 灯珠增减 ----
     $('s-add-bead').addEventListener('click', function () {
       var beads = getBeads();
-      beads.push({ input: [], output: [] });
+      beads.push({ input: [], output: [], on: true });
       saveBeads(beads);
       renderBeadList();
       updateFaceStatus();
@@ -190,6 +192,25 @@
       LG.Engine.refreshLEDPose();
       updateFaceStatus();
     });
+    // bead 启用/停用勾选（事件委托）：停用的灯珠不渲染、不参与仿真
+    $('s-bead-list').addEventListener('change', function (e) {
+      var cb = e.target.closest('[data-bead-on]');
+      if (!cb) return;
+      var idx = +cb.getAttribute('data-bead-on');
+      var beads = getBeads();
+      var activeCount = beads.filter(function (b) { return b.on !== false; }).length;
+      if (!cb.checked && activeCount <= 1) {
+        cb.checked = true;                       // 至少保留 1 颗参与仿真的灯珠
+        LG.status(LG.t('sim.keepOneBead'));
+        return;
+      }
+      beads[idx].on = cb.checked;
+      saveBeads(beads);
+      syncUnionFaces();
+      LG.Engine.refreshLEDPose();
+      renderBeadList();
+      updateFaceStatus();
+    });
     // bead 拾取按钮（事件委托）
     $('s-bead-list').addEventListener('click', function (e) {
       var btn = e.target.closest('[data-pick]');
@@ -207,7 +228,7 @@
       var auto = LG.Viewer.autoEndCaps();
       // 自动检测 → 写入第 1 颗灯珠
       var beads = getBeads();
-      beads[0] = { input: auto.input, output: auto.output };
+      beads[0] = { input: auto.input, output: auto.output, on: beads[0].on !== false };
       saveBeads(beads);
       LG.Viewer.setFaceHighlights(auto.input, auto.output);
       LG.Engine.refreshLEDPose();
@@ -218,7 +239,7 @@
     $('s-swap').addEventListener('click', function () {
       var beads = getBeads();
       // 交换所有灯珠的 input/output
-      beads = beads.map(function (b) { return { input: b.output.slice(), output: b.input.slice() }; });
+      beads = beads.map(function (b) { return { input: b.output.slice(), output: b.input.slice(), on: b.on !== false }; });
       saveBeads(beads);
       syncUnionFaces();
       LG.Engine.refreshLEDPose();
@@ -227,7 +248,7 @@
     });
     $('s-clear').addEventListener('click', function () {
       // 重置为 1 颗空灯珠
-      saveBeads([{ input: [], output: [] }]);
+      saveBeads([{ input: [], output: [], on: true }]);
       LG.Viewer.setFaceHighlights([], []);
       LG.Viewer.setPick(null);
       setPickBtn(null);
@@ -260,16 +281,19 @@
     // ---- beads 读写辅助 ----
     function getBeads() {
       var p = LG.state.project;
-      if (p.beads && p.beads.length) return p.beads.map(function (b) { return { input: (b.input||[]).slice(), output: (b.output||[]).slice() }; });
+      if (p.beads && p.beads.length) return p.beads.map(function (b) { return { input: (b.input||[]).slice(), output: (b.output||[]).slice(), on: b.on !== false }; });
       // 兼容旧数据：faces → beads[0]
-      return [{ input: (p.faces.input||[]).slice(), output: (p.faces.output||[]).slice() }];
+      return [{ input: (p.faces.input||[]).slice(), output: (p.faces.output||[]).slice(), on: true }];
     }
     function saveBeads(beads) {
       LG.Store.updateActive({ beads: beads, faces: { input: unionBeads(beads, 'input'), output: unionBeads(beads, 'output') } });
     }
     function unionBeads(beads, key) {
       var s = new Set(), out = [];
-      beads.forEach(function (b) { (b[key]||[]).forEach(function (id) { if (!s.has(id)) { s.add(id); out.push(id); } }); });
+      beads.forEach(function (b) {
+        if (b.on === false) return;   // 未勾选的灯珠：端面不高亮、不参与仿真
+        (b[key]||[]).forEach(function (id) { if (!s.has(id)) { s.add(id); out.push(id); } });
+      });
       return out;
     }
     function unionFaces(role) {
@@ -288,8 +312,12 @@
       beads.forEach(function (b, i) {
         var inTxt = b.input.length ? LG.t('sim.beadInputStatus', b.input.length) : LG.t('sim.beadInputEmpty');
         var outTxt = b.output.length ? LG.t('sim.beadOutputStatus', b.output.length) : LG.t('sim.beadOutputEmpty');
-        html += '<div class="bead-card">' +
+        html += '<div class="bead-card' + (b.on === false ? ' is-off' : '') + '">' +
           '<div class="bead-head"><b>' + LG.t('sim.bead', i + 1) + '</b>' +
+          '<label class="bead-on" title="' + LG.t('sim.beadOnTip') + '">' +
+            '<input type="checkbox" data-bead-on="' + i + '"' + (b.on === false ? '' : ' checked') + '>' +
+            '<span>' + LG.t('sim.beadOn') + '</span>' +
+          '</label>' +
           (beads.length > 1 ? '<button class="btn btn-danger btn-sm bead-rm" data-remove-bead="' + i + '">' + LG.t('sim.removeBead') + '</button>' : '') +
           '</div>' +
           '<div class="bead-status"><span>' + inTxt + '</span><span>' + outTxt + '</span></div>' +
@@ -364,6 +392,19 @@
 
     function runSim() {
       if (running) return;
+      // ---- 仿真前自动同步 model 页最新参数 ----
+      // 每次仿真启动前：①重新 build/恢复几何 ②跑静默预检查 ③同步 LED/端面到 Viewer。
+      // 这样即使用户直接跳到仿真页、没有回 model 页点"预检查"，也能保证参数一致。
+      var modelMod = LG.Modules.model || {};
+      if (modelMod.refreshCurrentProject) modelMod.refreshCurrentProject();
+      var pc = modelMod.precheckSilent ? modelMod.precheckSilent() : null;
+      if (pc && pc.warnings > 0) {
+        var warnTxt = pc.items.map(function (it) { return '⚠ ' + it.t; }).join(' | ');
+        console.warn('[预检查] ' + warnTxt);
+        // 状态栏提示但不阻塞仿真（结构预警不阻止用户运行，只是快速提醒）
+        LG.status ? LG.status('预检查: ' + pc.warnings + ' 项提醒') : null;
+      }
+
       var p = LG.state.project;
       if (!LG.state.mesh || !LG.Viewer.hasGeometry()) { LG.status(LG.t('c.needGeometry')); return; }
       if (!p.faces.input.length || !p.faces.output.length) { LG.status(LG.t('c.needFaces')); return; }
@@ -566,15 +607,18 @@
       var L = payload.ledger || {};
       var sum = (L.output || 0) + (L.side || 0) + (L.absorbed || 0) + (L.residual || 0) || 1;
       var order = ['output', 'side', 'absorbed', 'residual'];
-      var legend = '';
+      var rows = '';
       for (var i = 0; i < order.length; i++) {
         var k = order[i];
         var pct = (L[k] || 0) / sum * 100;
         if (pct > 0.05) html += '<div style="width:' + pct.toFixed(2) + '%;background:' + LEDGER_COLORS[k].color + '"></div>';
-        legend += '<span><i style="background:' + LEDGER_COLORS[k].color + '"></i>' +
-          LG.t(LEDGER_COLORS[k].key) + ' ' + pct.toFixed(1) + '%</span>';
+        // 参考切片软件的走线类型图例：文字前放与 3D 光路同色的色块
+        rows += '<div class="lg-row">' +
+          '<i class="lg-sw" style="background:' + LEDGER_COLORS[k].color + '"></i>' +
+          '<span class="lg-name">' + LG.t(LEDGER_COLORS[k].key) + '</span>' +
+          '<span class="lg-val">' + pct.toFixed(1) + '%</span></div>';
       }
-      html += '</div><div class="legend">' + legend + '</div>';
+      html += '</div><div class="ledger-legend">' + rows + '</div>';
       html += '<div class="hint" style="margin-top:8px">' +
         (payload.mode === 'worker' ? LG.t('sim.mode.worker') : LG.t('sim.mode.main')) + '</div>';
 
