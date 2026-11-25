@@ -1,1 +1,14 @@
-PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IuaWueahiEMg56uv6Z2i5Z2H5YWJIj4KICA8cmVjdCB4PSIxIiB5PSIxIiB3aWR0aD0iNjIiIGhlaWdodD0iNjIiIHJ4PSIxNSIgZmlsbD0iIzEyMzEzQiIvPgogIDwhLS0g5Ye65bCE56uv6Z2i6L2u5buTIC0tPgogIDxyZWN0IHg9IjE1IiB5PSIxNSIgd2lkdGg9IjM0IiBoZWlnaHQ9IjM0IiByeD0iNyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjIuMiIgb3BhY2l0eT0iLjUiLz4KICA8IS0tIOerr+mdoueFp+W6puWdh+WMgOWIhuW4gyAtLT4KICA8ZyBmaWxsPSIjMkVEOEM2Ij4KICAgIDxyZWN0IHg9IjIyIiB5PSIyNCIgd2lkdGg9IjMuNCIgaGVpZ2h0PSIxNiIgcng9IjEuNyIvPgogICAgPHJlY3QgeD0iMjgiIHk9IjI0IiB3aWR0aD0iMy40IiBoZWlnaHQ9IjE2IiByeD0iMS43Ii8+CiAgICA8cmVjdCB4PSIzNCIgeT0iMjQiIHdpZHRoPSIzLjQiIGhlaWdodD0iMTYiIHJ4PSIxLjciLz4KICAgIDxyZWN0IHg9IjQwIiB5PSIyNCIgd2lkdGg9IjMuNCIgaGVpZ2h0PSIxNiIgcng9IjEuNyIvPgogIDwvZz4KICA8IS0tIOWFpeWwhOWFiSAtLT4KICA8cGF0aCBkPSJNNSAzMmg4IiBzdHJva2U9IiMyRUQ4QzYiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIuNiIvPgo8L3N2Zz4K
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="方案C 端面均光">
+  <rect x="1" y="1" width="62" height="62" rx="15" fill="#12313B"/>
+  <!-- 出射端面轮廓 -->
+  <rect x="15" y="15" width="34" height="34" rx="7" fill="none" stroke="#FFFFFF" stroke-width="2.2" opacity=".5"/>
+  <!-- 端面照度均匀分布 -->
+  <g fill="#2ED8C6">
+    <rect x="22" y="24" width="3.4" height="16" rx="1.7"/>
+    <rect x="28" y="24" width="3.4" height="16" rx="1.7"/>
+    <rect x="34" y="24" width="3.4" height="16" rx="1.7"/>
+    <rect x="40" y="24" width="3.4" height="16" rx="1.7"/>
+  </g>
+  <!-- 入射光 -->
+  <path d="M5 32h8" stroke="#2ED8C6" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+</svg>
