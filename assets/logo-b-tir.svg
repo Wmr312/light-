@@ -1,1 +1,32 @@
-PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IuWvvOWFieafseWFiei/ueaooeaLn+W3peWFtyI+CiAgPHJlY3QgeD0iMSIgeT0iMSIgd2lkdGg9IjYyIiBoZWlnaHQ9IjYyIiByeD0iMTUiIGZpbGw9IiMxMjMxM0IiLz4KICA8IS0tIOWvvOWFieafseaKleW9sSAtLT4KICA8cmVjdCB4PSIxNi4yIiB5PSIyNi42IiB3aWR0aD0iMzIiIGhlaWdodD0iMTQiIHJ4PSI3IiBmaWxsPSIjMDAwMDAwIiBvcGFjaXR5PSIuMjIiLz4KICA8IS0tIExFRCDlsIHoo4XvvJrnhIrnm5ggLS0+CiAgPGcgZmlsbD0iIzJFRDhDNiIgb3BhY2l0eT0iLjU1Ij4KICAgIDxyZWN0IHg9IjYuMiIgeT0iMzguMCIgd2lkdGg9IjIuNiIgaGVpZ2h0PSIzLjAiIHJ4PSIxIi8+CiAgICA8cmVjdCB4PSIxMC4wIiB5PSIzOC4wIiB3aWR0aD0iMi42IiBoZWlnaHQ9IjMuMCIgcng9IjEiLz4KICA8L2c+CiAgPCEtLSBMRUQg5bCB6KOF5pys5L2TIC0tPgogIDxyZWN0IHg9IjUuMCIgeT0iMjUuNCIgd2lkdGg9IjguNiIgaGVpZ2h0PSIxMi44IiByeD0iMi4yIiBmaWxsPSIjOUJGNkU4Ii8+CiAgPCEtLSBMRUQg5Ye65YWJ6YCP6ZWc77yI5q2j5a+55YWl5bCE56uv6Z2i77yJIC0tPgogIDxyZWN0IHg9IjEzLjAiIHk9IjI4LjgiIHdpZHRoPSIyLjIiIGhlaWdodD0iNi40IiByeD0iMS4xIiBmaWxsPSIjRkZGRkZGIiBvcGFjaXR5PSIuOTUiLz4KICA8IS0tIOWvvOWFieafseacrOS9k++8muS4pOerr+S4uuerr+mdoiAtLT4KICA8cmVjdCB4PSIxNS4yIiB5PSIyNSIgd2lkdGg9IjMyLjIiIGhlaWdodD0iMTQiIHJ4PSI3IiBmaWxsPSIjRkZGRkZGIiBvcGFjaXR5PSIuOTUiLz4KICA8IS0tIOafseWGheWFiei3r++8muWFpeWwhOerr+eqhOOAgeWQkeWHuuWwhOerr+WxleW8gCAtLT4KICA8cGF0aCBkPSJNMTguNiAyOS40TDQ0IDI3LjZWMzYuNEwxOC42IDM0LjZ6IiBmaWxsPSIjMkVEOEM2IiBvcGFjaXR5PSIuMTYiLz4KICA8IS0tIOWFpeWwhOerr+mdoiAtLT4KICA8cmVjdCB4PSIxNS42IiB5PSIyNy4yIiB3aWR0aD0iMi42IiBoZWlnaHQ9IjkuNiIgcng9IjEuMyIgZmlsbD0iIzJFRDhDNiIvPgogIDwhLS0g5Ye65bCE56uv6Z2iIC0tPgogIDxyZWN0IHg9IjQ0LjAiIHk9IjI2LjIiIHdpZHRoPSIzLjQiIGhlaWdodD0iMTEuNiIgcng9IjEuNyIgZmlsbD0iIzlCRjZFOCIvPgogIDwhLS0g5Ye65bCE56uv5pWj5bCE5YWJ6ZSl77ya5p+U5ZKM5omp5pWjIC0tPgogIDxwYXRoIGQ9Ik00Ny42IDMyTDU4IDI1VjM5eiIgZmlsbD0iIzJFRDhDNiIgb3BhY2l0eT0iLjEiLz4KICA8IS0tIOaVo+WwhOWFiee6v++8muS6lOadn+e7hue6v++8jOS4reW/g+acgOS6ruOAgeWQkeWklua4kOW8sSAtLT4KICA8ZyBzdHJva2UtbGluZWNhcD0icm91bmQiIGZpbGw9Im5vbmUiPgogICAgPHBhdGggZD0iTTQ3LjYgMzJMNTcuNiAyNi4yIiBzdHJva2U9IiMyRUQ4QzYiIHN0cm9rZS13aWR0aD0iMS44IiBvcGFjaXR5PSIuNDUiLz4KICAgIDxwYXRoIGQ9Ik00Ny42IDMyTDU5IDI4LjkiIHN0cm9rZT0iIzJFRDhDNiIgc3Ryb2tlLXdpZHRoPSIxLjgiIG9wYWNpdHk9Ii43Ii8+CiAgICA8cGF0aCBkPSJNNDcuNiAzMkg1OS44IiBzdHJva2U9IiM5QkY2RTgiIHN0cm9rZS13aWR0aD0iMS44Ii8+CiAgICA8cGF0aCBkPSJNNDcuNiAzMkw1OSAzNS4xIiBzdHJva2U9IiMyRUQ4QzYiIHN0cm9rZS13aWR0aD0iMS44IiBvcGFjaXR5PSIuNyIvPgogICAgPHBhdGggZD0iTTQ3LjYgMzJMNTcuNiAzNy44IiBzdHJva2U9IiMyRUQ4QzYiIHN0cm9rZS13aWR0aD0iMS44IiBvcGFjaXR5PSIuNDUiLz4KICA8L2c+Cjwvc3ZnPgo=
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="导光柱光迹模拟工具">
+  <rect x="1" y="1" width="62" height="62" rx="15" fill="#12313B"/>
+  <!-- 导光柱投影 -->
+  <rect x="16.2" y="26.6" width="32" height="14" rx="7" fill="#000000" opacity=".22"/>
+  <!-- LED 封装：焊盘 -->
+  <g fill="#2ED8C6" opacity=".55">
+    <rect x="6.2" y="38.0" width="2.6" height="3.0" rx="1"/>
+    <rect x="10.0" y="38.0" width="2.6" height="3.0" rx="1"/>
+  </g>
+  <!-- LED 封装本体 -->
+  <rect x="5.0" y="25.4" width="8.6" height="12.8" rx="2.2" fill="#9BF6E8"/>
+  <!-- LED 出光透镜（正对入射端面） -->
+  <rect x="13.0" y="28.8" width="2.2" height="6.4" rx="1.1" fill="#FFFFFF" opacity=".95"/>
+  <!-- 导光柱本体：两端为端面 -->
+  <rect x="15.2" y="25" width="32.2" height="14" rx="7" fill="#FFFFFF" opacity=".95"/>
+  <!-- 柱内光路：入射端窄、向出射端展开 -->
+  <path d="M18.6 29.4L44 27.6V36.4L18.6 34.6z" fill="#2ED8C6" opacity=".16"/>
+  <!-- 入射端面 -->
+  <rect x="15.6" y="27.2" width="2.6" height="9.6" rx="1.3" fill="#2ED8C6"/>
+  <!-- 出射端面 -->
+  <rect x="44.0" y="26.2" width="3.4" height="11.6" rx="1.7" fill="#9BF6E8"/>
+  <!-- 出射端散射光锥：柔和扩散 -->
+  <path d="M47.6 32L58 25V39z" fill="#2ED8C6" opacity=".1"/>
+  <!-- 散射光线：五束细线，中心最亮、向外渐弱 -->
+  <g stroke-linecap="round" fill="none">
+    <path d="M47.6 32L57.6 26.2" stroke="#2ED8C6" stroke-width="1.8" opacity=".45"/>
+    <path d="M47.6 32L59 28.9" stroke="#2ED8C6" stroke-width="1.8" opacity=".7"/>
+    <path d="M47.6 32H59.8" stroke="#9BF6E8" stroke-width="1.8"/>
+    <path d="M47.6 32L59 35.1" stroke="#2ED8C6" stroke-width="1.8" opacity=".7"/>
+    <path d="M47.6 32L57.6 37.8" stroke="#2ED8C6" stroke-width="1.8" opacity=".45"/>
+  </g>
+</svg>
