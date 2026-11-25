@@ -156,29 +156,38 @@
     };
   }
 
-  // ============ 热图（增强版：等高线带 + 热点/暗区标注 + 均值参考线） ============
+  // ============ 热图（增强版：按真实 bbox 比例绘制 + 等高线带 + 热点/暗区标注 + 均值参考线） ============
   function drawHeatmap(canvas, heat, metrics) {
     var s = setup(canvas), ctx = s.ctx, W = s.w, H = s.h;
     var res = heat.res;
-    var padL = 46, padB = 30, padT = 10, barW = 14, barGap = 12;
-    var pw = Math.max(40, W - padL - barW - barGap - 14);
+    var padL = 46, padB = 30, padT = 10, padR = 14, barW = 14, barGap = 12;
+    var pw = Math.max(40, W - padL - padR - barW - barGap);
     var ph = Math.max(40, H - padT - padB);
-    var size = Math.min(pw, ph);
-    var ox = padL + (pw - size) / 2, oy = padT + (ph - size) / 2;
+
+    // 热图区域按真实 bbox 长宽比绘制（保持物理比例，不再强制正方形）
+    var wMM = Math.abs((heat.u1 || 0) - (heat.u0 || 0)) || 1;
+    var hMM = Math.abs((heat.v1 || 0) - (heat.v0 || 0)) || 1;
+    var ratio = wMM / hMM;
+    var wPx = pw, hPx = pw / ratio;
+    if (hPx > ph) { hPx = ph; wPx = ph * ratio; }
+    var ox = padL + (pw - wPx) / 2, oy = padT + (ph - hPx) / 2;
+
+    // 每个热图单元的像素宽/高（因比例不再相等，单元是长方形而非正方形）
+    var cw = wPx / res, ch = hPx / res;
+    // 单元视觉尺寸取较大者决定标注字号
+    var cellSize = Math.max(cw, ch);
 
     // 找最大值 + 计算均值（空单元跳过）
-    // 用 cells（累计能量 = 面上照度 × 单元面积），让视觉热图反映能量分布，与 computeMetrics 保持一致。
     var vmax = 0, vsum = 0, vcount = 0;
     for (var i = 0; i < heat.cells.length; i++) {
       if (heat.counts[i] > 0) {
-        var v0 = heat.cells[i];  // ✅ 累计能量 cells
+        var v0 = heat.cells[i];
         if (v0 > vmax) vmax = v0;
         vsum += v0; vcount++;
       }
     }
     if (vmax <= 0) vmax = 1;
     var vavg = vcount > 0 ? vsum / vcount : 0;
-    // 如果外部传入了 metrics，使用其 avg（更精确）
     if (metrics && metrics.avg) vavg = metrics.avg;
 
     // 构建网格值表（方便等高线判断）
@@ -191,11 +200,9 @@
       }
     }
 
-    // 背景（空单元）
+    // 背景（空单元区域）
     ctx.fillStyle = '#F1F5F9';
-    ctx.fillRect(ox, oy, size, size);
-
-    var cw = size / res;
+    ctx.fillRect(ox, oy, wPx, hPx);
 
     // 1. 绘制彩色色块
     for (var r = 0; r < res; r++) {
@@ -204,11 +211,11 @@
         if (heat.counts[idx] <= 0) continue;
         var val = heat.cells[idx];
         ctx.fillStyle = jet(val / vmax);
-        ctx.fillRect(ox + c * cw, oy + (res - 1 - r) * cw, cw + 0.5, cw + 0.5);
+        ctx.fillRect(ox + c * cw, oy + (res - 1 - r) * ch, cw + 0.5, ch + 0.5);
       }
     }
 
-    // 2. 等高线带：在均值±15%范围的单元上绘制白色半透明边框（可视化"均值等值区"）
+    // 2. 等高线带：均值±15% 范围单元的白色半透明边框
     if (vavg > 0) {
       ctx.strokeStyle = 'rgba(255,255,255,0.55)';
       ctx.lineWidth = 1.5;
@@ -217,7 +224,6 @@
           if (grid[r2][c2] < 0) continue;
           var inBand = grid[r2][c2] >= vavg * 0.85 && grid[r2][c2] <= vavg * 1.15;
           if (!inBand) continue;
-          // 检查是否有邻居不在均值带内（边缘单元）
           var neighbors = [
             r2 > 0 ? grid[r2-1][c2] : -1,
             r2 < res-1 ? grid[r2+1][c2] : -1,
@@ -231,7 +237,7 @@
             }
           }
           if (isEdge) {
-            ctx.strokeRect(ox + c2 * cw, oy + (res - 1 - r2) * cw, cw, cw);
+            ctx.strokeRect(ox + c2 * cw, oy + (res - 1 - r2) * ch, cw, ch);
           }
         }
       }
@@ -241,18 +247,16 @@
     // 3. 热点标注：照度 > 1.5×均值的单元标记红色 ▲
     if (vavg > 0) {
       ctx.fillStyle = 'rgba(220,38,38,0.85)';
-      ctx.font = (cw > 14 ? 10 : 8) + 'px sans-serif';
+      ctx.font = (cellSize > 14 ? 10 : 8) + 'px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      var hotCount = 0;
       for (var r3 = 0; r3 < res; r3++) {
         for (var c3 = 0; c3 < res; c3++) {
           if (grid[r3][c3] < 0) continue;
           if (grid[r3][c3] > vavg * 1.5) {
             var hx = ox + c3 * cw + cw / 2;
-            var hy = oy + (res - 1 - r3) * cw + cw / 2;
+            var hy = oy + (res - 1 - r3) * ch + ch / 2;
             ctx.fillText('▲', hx, hy);
-            hotCount++;
           }
         }
       }
@@ -262,7 +266,7 @@
     // 4. 暗区标注：照度 < 0.3×均值的单元标记蓝色 ●
     if (vavg > 0) {
       ctx.fillStyle = 'rgba(37,99,235,0.8)';
-      ctx.font = (cw > 14 ? 10 : 8) + 'px sans-serif';
+      ctx.font = (cellSize > 14 ? 10 : 8) + 'px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       for (var r4 = 0; r4 < res; r4++) {
@@ -270,9 +274,9 @@
           if (grid[r4][c4] < 0) continue;
           if (grid[r4][c4] < vavg * 0.3) {
             var dx = ox + c4 * cw + cw / 2;
-            var dy = oy + (res - 1 - r4) * cw + cw / 2;
+            var dy = oy + (res - 1 - r4) * ch + ch / 2;
             ctx.beginPath();
-            ctx.arc(dx, dy, cw > 14 ? 2.5 : 1.5, 0, Math.PI * 2);
+            ctx.arc(dx, dy, Math.max(1.5, cellSize * 0.18), 0, Math.PI * 2);
             ctx.fill();
           }
         }
@@ -281,10 +285,10 @@
     }
 
     ctx.strokeStyle = '#CBD5E1';
-    ctx.strokeRect(ox + 0.5, oy + 0.5, size, size);
+    ctx.strokeRect(ox + 0.5, oy + 0.5, wPx, hPx);
 
-    // 5. 色标条 + 均值参考线
-    var bx = ox + size + barGap, bh = size;
+    // 5. 色标条 + 均值参考线（紧贴热图右侧）
+    var bx = ox + wPx + barGap, bh = hPx;
     for (var y = 0; y < bh; y++) {
       ctx.fillStyle = jet(1 - y / bh);
       ctx.fillRect(bx, oy + y, barW, 1.5);
@@ -296,7 +300,6 @@
     ctx.textAlign = 'left';
     ctx.fillText(vmax.toFixed(2), bx + barW + 3, oy + 8);
     ctx.fillText('0', bx + barW + 3, oy + bh);
-    // 均值参考线（白色三角 + AVG 标注）
     if (vavg > 0) {
       var avgY = oy + bh - (vavg / vmax) * bh;
       ctx.strokeStyle = '#fff';
@@ -312,18 +315,31 @@
     }
 
     // 坐标标注（mm）
+    ctx.fillStyle = '#64748B';
+    ctx.font = '10px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(fmtMM(heat.u0), ox, oy + size + 14);
-    ctx.fillText(fmtMM(heat.u1), ox + size, oy + size + 14);
-    ctx.textAlign = 'left';
+    ctx.fillText(fmtMM(heat.u0), ox, oy + hPx + 14);
+    ctx.fillText(fmtMM(heat.u1), ox + wPx, oy + hPx + 14);
+    // 中点坐标
+    ctx.fillText(fmtMM((heat.u0 + heat.u1) / 2), ox + wPx / 2, oy + hPx + 14);
+    ctx.textAlign = 'right';
     ctx.fillText(fmtMM(heat.v1), ox - 6, oy + 10);
-    ctx.fillText(fmtMM(heat.v0), ox - 6, oy + size);
+    ctx.fillText(fmtMM(heat.v0), ox - 6, oy + hPx);
+    ctx.textAlign = 'center';
+    ctx.fillText(fmtMM((heat.v0 + heat.v1) / 2), ox - 36, oy + hPx / 2);
 
-    // 6. 图例
+    // 热图物理尺寸标注
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#64748B';
+    ctx.font = '9px system-ui, sans-serif';
+    ctx.fillText('出射端面: ' + wMM.toFixed(1) + ' × ' + hMM.toFixed(1) + ' mm',
+      ox + wPx / 2, oy + hPx + 26);
+
+    // 6. 图例（横排，按可用空间自适应）
     ctx.fillStyle = '#64748B';
     ctx.font = '10px system-ui, sans-serif';
     ctx.textAlign = 'left';
-    var lx = ox, ly = oy + size + 26;
+    var lx = ox, ly = oy + hPx + 40;
     ctx.fillStyle = 'rgba(220,38,38,0.85)';
     ctx.fillText('▲ 热点(>1.5×均值)', lx, ly);
     ctx.fillStyle = 'rgba(37,99,235,0.8)';
