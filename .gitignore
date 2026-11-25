@@ -1,1 +1,24 @@
-IyBPUwouRFNfU3RvcmUKVGh1bWJzLmRiCmRlc2t0b3AuaW5pCgojIOe8lui+keWZqAouaWRlYS8KLnZzY29kZS8KKi5zd3AKKi5zd28KKn4KCiMg5pel5b+XCioubG9nCm5wbS1kZWJ1Zy5sb2cqCgojIOS4tOaXtuaWh+S7tgoudHJhZS8KLnNjcmVlbnNob3RzLwoudHJhZS1odG1sLXNoYXJlLXBhY2thZ2VzLwoKIyDns7vnu5/nvJPlrZgKY2FjaGUvCi50bXAvCg==
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 日志
+*.log
+npm-debug.log*
+
+# 临时文件
+.trae/
+.screenshots/
+.trae-html-share-packages/
+
+# 系统缓存
+cache/
+.tmp/
