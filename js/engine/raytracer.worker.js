@@ -3,7 +3,7 @@
  * 主线程发送：{ meshData:{positions,indices}, options:{...仿真参数, heatmapRes, axisBins, angleBinDeg, returnSegments} }
  * 返回：汇总 + ledger + agg(热图/轴向/角度) + elapsedMs (+segments 当 returnSegments)
  */
-importScripts('raytracer.js?v=30');
+importScripts('raytracer.js?v=36');
 // 注意：raytracer.js 顶层的 class RayTracer 在 worker 全局作用域形成词法绑定，
 // 此处不能再用 var RayTracer 重复声明（会触发 SyntaxError: already been declared），
 // 直接使用全局类名即可。
