@@ -1,1 +1,11 @@
-QGVjaG8gb2ZmCnRpdGxlIExpZ2h0IEd1aWRlIFNpbXVsYXRvciAtIExvY2FsIFNlcnZlcgpjZCAvZCAiJX5kcDAiCmVjaG8gU3RhcnRpbmcgbG9jYWwgc2VydmVyLi4uCnN0YXJ0ICIiIHBvd2Vyc2hlbGwgLU5vUHJvZmlsZSAtRXhlY3V0aW9uUG9saWN5IEJ5cGFzcyAtRmlsZSAiJX5kcDBzZXJ2ZS5wczEiCnRpbWVvdXQgL3QgMiA+bnVsCnN0YXJ0ICIiIGh0dHA6Ly9sb2NhbGhvc3Q6ODc2NS8KZWNoby4KZWNobyBPcGVuZWQgaHR0cDovL2xvY2FsaG9zdDo4NzY1LyAgKGlmIG5vdCwgb3BlbiBpdCBtYW51YWxseSkKZWNobyBDbG9zZSB0aGUgUG93ZXJTaGVsbCB3aW5kb3cgdG8gc3RvcCB0aGUgc2VydmVyLgp0aW1lb3V0IC90IDUgPm51bAo=
+@echo off
+title Light Guide Simulator - Local Server
+cd /d "%~dp0"
+echo Starting local server...
+start "" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0serve.ps1"
+timeout /t 2 >nul
+start "" http://localhost:8765/
+echo.
+echo Opened http://localhost:8765/  (if not, open it manually)
+echo Close the PowerShell window to stop the server.
+timeout /t 5 >nul
