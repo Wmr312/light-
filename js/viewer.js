@@ -52,7 +52,6 @@
   var lastPlateArgs = null;
   var plateUIHost = null, plateLab = {}, plateTips = null;
   var plateToolCb = null;
-  var plateTex = { light: null, dark: null };
   // 盘面快捷控件（删除/朝向/锁定/前后位置）改用 3D Sprite：
   // 世界尺寸与盘面同一比例，相机缩放时按钮与盘同比例放大缩小（不再固定 CSS 像素）。
   var PLATE_BTN = 3.4, PLATE_BTN_STEP = 3.9;
@@ -183,11 +182,28 @@
     (function animate() {
       requestAnimationFrame(animate);
       controls.update();
+      updateOpScale();
       renderer.render(scene, camera);
       updateGizmo();
       updatePlateUI();
     })();
     inited = true;
+  }
+
+  // ---- 操作 gizmo 屏幕尺寸恒定：移动箭头始终 ~96px 长，任何视角/缩放下都好点选 ----
+  var GIZMO_PX = 96;          // 移动箭头目标屏幕长度（px）
+  var GIZMO_RING_PX = 78;     // 旋转圆环目标屏幕半径（px）
+  var _gizmoWorldPos = new THREE.Vector3();
+  function updateOpScale() {
+    if (!opGroup) return;
+    if ((opMode !== 'move' && opMode !== 'rotate') || !mesh) { opGroup.scale.setScalar(1); return; }
+    mesh.getWorldPosition(_gizmoWorldPos);
+    var dist = camera.position.distanceTo(_gizmoWorldPos);
+    var h = renderer.domElement.clientHeight || 600;
+    var worldPerPx = 2 * Math.tan(camera.fov * Math.PI / 360) * dist / h;
+    // 几何基准：移动箭头长度 1.0；旋转圆环半径 1.3
+    var k = opMode === 'move' ? worldPerPx * GIZMO_PX : worldPerPx * GIZMO_RING_PX / 1.3;
+    opGroup.scale.setScalar(Math.max(0.6, k));
   }
 
   // ---- XYZ 坐标随动指示器（左下角，随相机旋转同步） ----
@@ -263,8 +279,14 @@
     raw = { positions: positions, indices: indices, name: name || '' };
 
     var geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    if (indices) geo.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
+    // 必须克隆：下面的 translate / scale 会原地改写顶点数组，
+    // 若直接引用 meshCache 的 positions，会把缓存（及持久化网格）逐次破坏 → 每次进页面视角/形状都变
+    var posClone = (positions instanceof Float32Array) ? positions.slice() : new Float32Array(positions);
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(posClone, 3));
+    if (indices) {
+      var idxClone = (indices instanceof Uint32Array) ? indices.slice() : new Uint32Array(indices);
+      geo.setIndex(new THREE.Uint32BufferAttribute(idxClone, 1));
+    }
     // 导入的网格（STL/OBJ）通常没有法线；Phong 材质缺 normal 会渲染成黑色，
     // 因此缺失时补算一次法线（已有法线则保留原样）
     if (!geo.hasAttribute('normal')) geo.computeVertexNormals();
@@ -512,9 +534,9 @@
   // ---- 移动模式：XYZ 轴向箭头（红 X / 绿 Y / 蓝 Z） ----
   function buildMoveGizmo() {
     if (!opGroup) return;
-    var s = 1.0;   // 箭头长度（显示空间）
-    var coneR = 0.16, coneH = 0.38;
-    var shaftR = 0.022;   // 轴杆半径（原 0.035 → 更细）
+    var s = 1.0;   // 箭头长度（显示空间，实际屏幕尺寸由 updateOpScale 恒定为 ~96px）
+    var coneR = 0.20, coneH = 0.45;
+    var shaftR = 0.045;   // 轴杆半径（加粗，便于拾取）
     var axes = [
       { name: 'x', color: 0xE5484D, dir: new THREE.Vector3(1, 0, 0) },
       { name: 'y', color: 0x46A758, dir: new THREE.Vector3(0, 1, 0) },
@@ -524,25 +546,26 @@
     for (var i = 0; i < axes.length; i++) {
       var ax = axes[i];
       var grp = new THREE.Group();
+      // 全部放进透明渲染队列并给最高 renderOrder：保证永远画在半透明零件之上，不被"蒙一层"
+      var haloMat = new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, transparent: true, opacity: 1 });
+      var bodyMat = new THREE.MeshBasicMaterial({ color: ax.color, depthTest: false, transparent: true, opacity: 1 });
       // 杆
-      var sh = new THREE.Mesh(new THREE.CylinderGeometry(shaftR, shaftR, s - coneH, 12),
-        new THREE.MeshBasicMaterial({ color: ax.color, depthTest: false }));
-      // 默认沿 Y，旋转到目标轴
-      if (ax.name === 'x') sh.rotation.z = -Math.PI / 2;
-      else if (ax.name === 'z') sh.rotation.x = Math.PI / 2;
-      sh.position.copy(ax.dir.clone().multiplyScalar((s - coneH) / 2));
-      sh.renderOrder = 10; sh.depthTest = false;
-      grp.add(sh);
+      var sh = new THREE.Mesh(new THREE.CylinderGeometry(shaftR, shaftR, s - coneH, 12), bodyMat);
+      var shHalo = new THREE.Mesh(new THREE.CylinderGeometry(shaftR * 1.6, shaftR * 1.6, s - coneH, 12), haloMat);
       // 锥
-      var cone = new THREE.Mesh(new THREE.ConeGeometry(coneR, coneH, 16),
-        new THREE.MeshBasicMaterial({ color: ax.color, depthTest: false }));
-      if (ax.name === 'x') cone.rotation.z = -Math.PI / 2;
-      else if (ax.name === 'z') cone.rotation.x = Math.PI / 2;
-      cone.position.copy(ax.dir.clone().multiplyScalar(s - coneH / 2));
-      cone.renderOrder = 10; cone.depthTest = false;
-      grp.add(cone);
-      // 整体让 arrow 可以被命中
-      grp.traverse(function (o) { o.renderOrder = 10; });
+      var cone = new THREE.Mesh(new THREE.ConeGeometry(coneR, coneH, 16), bodyMat);
+      var coneHalo = new THREE.Mesh(new THREE.ConeGeometry(coneR * 1.22, coneH * 1.06, 16), haloMat);
+      // 默认沿 Y，旋转到目标轴
+      if (ax.name === 'x') { sh.rotation.z = -Math.PI / 2; shHalo.rotation.z = -Math.PI / 2; cone.rotation.z = -Math.PI / 2; coneHalo.rotation.z = -Math.PI / 2; }
+      else if (ax.name === 'z') { sh.rotation.x = Math.PI / 2; shHalo.rotation.x = Math.PI / 2; cone.rotation.x = Math.PI / 2; coneHalo.rotation.x = Math.PI / 2; }
+      shHalo.position.copy(ax.dir.clone().multiplyScalar((s - coneH) / 2));
+      sh.position.copy(shHalo.position);
+      coneHalo.position.copy(ax.dir.clone().multiplyScalar(s - coneH / 2));
+      cone.position.copy(coneHalo.position);
+      // 描边先画（renderOrder 19），彩色本体后画（renderOrder 20）盖住中间部分
+      shHalo.renderOrder = 19; coneHalo.renderOrder = 19;
+      sh.renderOrder = 20; cone.renderOrder = 20;
+      grp.add(shHalo); grp.add(coneHalo); grp.add(sh); grp.add(cone);
       grp.userData.axis = ax.name;
       grp.position.set(0, 0, 0);
       opGroup.add(grp);
@@ -571,19 +594,32 @@
       rg.userData.axis = ax.name;
 
       var torus = new THREE.Mesh(
-        new THREE.TorusGeometry(R, 0.028, 12, 96),
-        new THREE.MeshBasicMaterial({ color: ax.color, depthTest: false, transparent: true, opacity: 0.9 })
+        // 环本身加粗到 0.045，才能在白描边上方保留足够可见的彩色宽度
+        new THREE.TorusGeometry(R, 0.045, 12, 96),
+        new THREE.MeshBasicMaterial({ color: ax.color, depthTest: false, transparent: true, opacity: 1 })
       );
       torus.userData.axis = ax.name;
-      torus.renderOrder = 10;
+      torus.renderOrder = 20;
       rg.add(torus);
       rg.userData.torus = torus;
+
+      // 白色描边：任何背景色下圆环都清晰（与移动箭头同一套层级）
+      var ringHalo = new THREE.Mesh(
+        new THREE.TorusGeometry(R, 0.078, 12, 96),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, transparent: true, opacity: 1 })
+      );
+      ringHalo.userData.axis = ax.name;
+      ringHalo.renderOrder = 9;
+      rg.add(ringHalo);
 
       // 环上的方向指示：正方体 + 左右两个锥形箭头（指向切线正/负方向）
       rg.userData.handle = buildRingHandle(rg, ax.color, R, ax.handleAng);
       rg.userData.handleBaseAng = ax.handleAng;
 
-      rg.traverse(function (o) { o.renderOrder = 10; });
+      rg.traverse(function (o) { o.renderOrder = 20; });
+      ringHalo.renderOrder = 19;   // traverse 会覆盖，这里复位
+      // 方向指示块：描边 21 / 本体 22，保证盖在环之上
+      rg.userData.handle.traverse(function (o) { o.renderOrder = o.userData.halo ? 21 : 22; });
       opGroup.add(rg);
       opRotateRings[ax.name] = rg;
     }
@@ -610,7 +646,18 @@
     // 放到环上 ang 处，并让局部 +X 对齐该点的切线方向 (-sin, cos)
     g.position.set(Math.cos(ang) * R, Math.sin(ang) * R, 0);
     g.rotation.z = ang + Math.PI / 2;
-    g.traverse(function (o) { o.renderOrder = 12; });
+    g.traverse(function (o) { o.renderOrder = 22; });
+    // 白色描边：方向指示块在任何背景色下同样清晰
+    var haloMat = new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, transparent: true, opacity: 1 });
+    var boxHalo = new THREE.Mesh(new THREE.BoxGeometry(boxSize * 1.5, boxSize * 1.5, boxSize * 1.5), haloMat);
+    var coneHaloGeo = new THREE.ConeGeometry(0.085 * 1.6, 0.24 * 1.14, 12);
+    var c1h = new THREE.Mesh(coneHaloGeo, haloMat);
+    c1h.position.copy(c1.position); c1h.rotation.copy(c1.rotation);
+    var c2h = new THREE.Mesh(coneHaloGeo, haloMat);
+    c2h.position.copy(c2.position); c2h.rotation.copy(c2.rotation);
+    g.add(boxHalo); g.add(c1h); g.add(c2h);
+    boxHalo.renderOrder = 21; c1h.renderOrder = 21; c2h.renderOrder = 21;
+    boxHalo.userData.halo = true; c1h.userData.halo = true; c2h.userData.halo = true;
     parent.add(g);
     return g;
   }
@@ -1324,7 +1371,11 @@
   /** 依据 ledParams + 当前 xform 重建 LED mesh */
   function applyLED() {
     clearLED();
-    if (!ledParams || !ledParams.enabled || !meshGeometry) return;
+    // 必须真的有几何顶点才渲染 LED——空盘（positions 空数组）不能画 LED mesh，
+    // 否则场景里只剩一颗黄色 LED 会让人误以为盘面背景变黄
+    if (!ledParams || !ledParams.enabled) return;
+    if (!meshGeometry || !meshGeometry.attributes ||
+        !meshGeometry.attributes.position || meshGeometry.attributes.position.count === 0) return;
 
     var p = ledParams;
     var type = p.type || 'rectangle';
@@ -1449,30 +1500,119 @@
   // 每个项目 = 一个 3D 盘面，每行 4 块、超出换行纵向排布；当前盘落在世界原点并加深盘面 +
   // 青色边框，其余盘为浅色；盘名 / 序号 / 快捷控件是 HTML 浮层，按 3D 投影跟随盘面。
 
-  // 盘网格纹理：两级网格（细格 + 每 5 格一条主线），分辨率提高后拉升到 50 单位盘面才清晰。
+  // 盘面网格：两级网格（细格 + 每 5 格一条主线）。
   // 配色参考 OrcaSlicer：浅盘灰底深灰线，当前盘深炭灰底 + 半透明白线。
   var PLATE_CELLS = 25;
-  function plateGridTexture(dark) {
-    var S = 1024;
-    var cv = document.createElement('canvas');
-    cv.width = S; cv.height = S;
-    var c = cv.getContext('2d');
-    c.fillStyle = dark ? '#33383B' : '#E4E4E4';
-    c.fillRect(0, 0, S, S);
-    var fine = dark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)';
-    var major = dark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.20)';
-    for (var i = 0; i <= PLATE_CELLS; i++) {
-      var t = i * S / PLATE_CELLS;
-      var isMajor = i % 5 === 0;
-      c.strokeStyle = isMajor ? major : fine;
-      c.lineWidth = isMajor ? 3 : 2;
-      c.beginPath(); c.moveTo(t, 0); c.lineTo(t, S); c.stroke();
-      c.beginPath(); c.moveTo(0, t); c.lineTo(S, t); c.stroke();
+  /**
+   * 盘面网格：用矢量线段（LineSegments）而不是贴图。
+   * 贴图会被拉伸/过滤 —— 放大盘时线变粗、变模糊；矢量线在 WebGL 中恒为 1 像素，
+   * 缩放只改变间距、不改变线径，任何视角都清晰。
+   * @param {boolean} on 是否当前盘（决定线的颜色与透明度）
+   */
+  function plateGridLines(on) {
+    var hw = PLATE_W / 2, hd = PLATE_D / 2;
+    var sx = PLATE_W / PLATE_CELLS, sz = PLATE_D / PLATE_CELLS;
+    var fine = [], major = [];
+    var y = 0.004;   // 略高于盘面，避免与底板共面产生 z-fighting
+    for (var i = 1; i < PLATE_CELLS; i++) {
+      var arr = (i % 5 === 0) ? major : fine;
+      var x = -hw + i * sx, z = -hd + i * sz;
+      arr.push(x, y, -hd, x, y, hd);    // 沿 Z 的竖线
+      arr.push(-hw, y, z, hw, y, z);    // 沿 X 的横线
     }
-    var tex = new THREE.CanvasTexture(cv);
-    // 斜视角下网格线容易被各向异性过滤糊掉，开到硬件上限
-    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    return tex;
+    var group = new THREE.Group();
+    function mk(arr, color, opacity) {
+      if (!arr.length) return;
+      var g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+      var l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({
+        color: color, transparent: true, opacity: opacity, depthWrite: false
+      }));
+      l.renderOrder = -9;   // 在底板（-10）之上、零件（1）之下
+      group.add(l);
+    }
+    mk(fine, on ? 0xFFFFFF : 0x000000, on ? 0.10 : 0.08);
+    mk(major, on ? 0xFFFFFF : 0x000000, on ? 0.28 : 0.20);
+    return group;
+  }
+
+  // ---- 盘面品牌水印：LOGO + 英文名 LuxPath（参考 OrcaSlicer 盘中心下方布局） ----
+  var plateLogoTex = null;
+  var PLATE_LOGO_W = 28;           // 水印世界宽度（盘宽 50 的 56%，与参考图比例一致）
+  function plateLogoTexture() {
+    if (plateLogoTex) return plateLogoTex;
+    var W = 1320, H = 380, tile = 340, ty = (H - tile) / 2;
+    var cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    var c = cv.getContext('2d');
+    // 圆角底板（与应用图标一致）
+    roundRectPath(c, 0, ty, tile, tile, tile * 15 / 64);
+    c.fillStyle = '#12313B'; c.fill();
+
+    // 图标本体：直接按 logo.svg 的 64×64 坐标绘制
+    var k = tile / 64;
+    c.save();
+    c.translate(0, ty);
+    c.scale(k, k);
+    c.fillStyle = 'rgba(0,0,0,.22)';
+    roundRectPath(c, 16.2, 26.6, 32, 14, 7); c.fill();            // 柱体投影
+    c.fillStyle = 'rgba(46,216,198,.55)';
+    roundRectPath(c, 6.2, 38, 2.6, 3, 1); c.fill();               // 焊盘
+    roundRectPath(c, 10, 38, 2.6, 3, 1); c.fill();
+    c.fillStyle = '#9BF6E8';
+    roundRectPath(c, 5, 25.4, 8.6, 12.8, 2.2); c.fill();          // LED 封装
+    c.fillStyle = 'rgba(255,255,255,.95)';
+    roundRectPath(c, 13, 28.8, 2.2, 6.4, 1.1); c.fill();          // 出光透镜
+    roundRectPath(c, 15.2, 25, 32.2, 14, 7); c.fill();            // 导光柱本体
+    c.fillStyle = 'rgba(46,216,198,.16)';                          // 柱内光路
+    c.beginPath(); c.moveTo(18.6, 29.4); c.lineTo(44, 27.6);
+    c.lineTo(44, 36.4); c.lineTo(18.6, 34.6); c.closePath(); c.fill();
+    c.fillStyle = '#2ED8C6'; roundRectPath(c, 15.6, 27.2, 2.6, 9.6, 1.3); c.fill();   // 入射端面
+    c.fillStyle = '#9BF6E8'; roundRectPath(c, 44, 26.2, 3.4, 11.6, 1.7); c.fill();    // 出射端面
+    c.fillStyle = 'rgba(46,216,198,.10)';                          // 出射散射光锥
+    c.beginPath(); c.moveTo(47.6, 32); c.lineTo(58, 25); c.lineTo(58, 39); c.closePath(); c.fill();
+    var rays = [[57.6, 26.2, .45], [59, 28.9, .7], [59.8, 32, 1], [59, 35.1, .7], [57.6, 37.8, .45]];
+    c.lineCap = 'round'; c.lineWidth = 1.8;
+    for (var i = 0; i < rays.length; i++) {
+      c.strokeStyle = (i === 2) ? '#9BF6E8' : 'rgba(46,216,198,' + rays[i][2] + ')';
+      c.beginPath(); c.moveTo(47.6, 32); c.lineTo(rays[i][0], rays[i][1]); c.stroke();
+    }
+    c.restore();
+
+    // 英文名：Lux（暖色光）+ Path（白色）
+    c.textBaseline = 'middle';
+    c.textAlign = 'left';
+    c.font = '500 200px "Segoe UI", "Microsoft YaHei", Arial, sans-serif';
+    try { c.letterSpacing = '6px'; } catch (e) { /* 旧内核不支持字间距，忽略 */ }
+    var tx = tile + 80, tyText = H / 2;
+    c.fillStyle = '#FFB35C';               // 光线暖色调
+    c.fillText('Lux', tx, tyText);
+    var luxW = c.measureText('Lux').width;
+    c.fillStyle = '#FFFFFF';
+    c.fillText('Path', tx + luxW, tyText);
+
+    plateLogoTex = new THREE.CanvasTexture(cv);
+    // 关闭 mipmap：盘面斜视角下水印被极度压缩，mipmap 会把细白字糊成一片，
+    // 直接用线性过滤保留字体笔画（轻微锯齿可接受，远好过整段文字消失）
+    plateLogoTex.generateMipmaps = false;
+    plateLogoTex.minFilter = THREE.LinearFilter;
+    plateLogoTex.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 4;
+    return plateLogoTex;
+  }
+
+  /** 盘面水印网格（贴地平放，位于盘中心偏前 = 画面的下方） */
+  function plateLogoMesh(on) {
+    var w = PLATE_LOGO_W, h = w * 380 / 1320;
+    var m = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
+      new THREE.MeshBasicMaterial({
+        map: plateLogoTexture(), transparent: true, opacity: on ? 0.95 : 0.7,
+        depthWrite: false, side: THREE.DoubleSide
+      }));
+    m.rotation.x = -Math.PI / 2;
+    // 位置：LOGO 方块底边与盘面最靠前的网格线（z = PLATE_D/2 - 一格 = 23）对齐
+    m.position.set(0, 0.006, PLATE_D * 0.39);
+    m.renderOrder = -8;   // 底板/网格之上、零件之下
+    return m;
   }
 
   // ---- 盘面快捷控件：矢量图标 → Canvas 纹理 → Sprite（随盘同比例缩放） ----
@@ -1638,7 +1778,7 @@
       scene.remove(plateLayer);
       plateLayer.traverse(function (o) {
         if (o.geometry) o.geometry.dispose();
-        if (o.material) o.material.dispose();   // 网格纹理 plateTex / 按钮纹理 plateBtnTex 全局复用，不随材质销毁
+        if (o.material) o.material.dispose();   // 按钮纹理 plateBtnTex 全局复用，不随材质销毁
       });
       plateLayer = null;
     }
@@ -1672,8 +1812,13 @@
   /** 轻量「零件」示意网格：把 mm 几何归一化到盘面尺度，并让底面正好坐在盘面上 */
   function buildPlatePart(positions, indices) {
     var g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    if (indices) g.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
+    // 克隆顶点数组：下面的 translate / scale 会原地改写，避免破坏 meshCache 与持久化网格
+    var posClone = (positions instanceof Float32Array) ? positions.slice() : new Float32Array(positions);
+    g.setAttribute('position', new THREE.Float32BufferAttribute(posClone, 3));
+    if (indices) {
+      var idxClone = (indices instanceof Uint32Array) ? indices.slice() : new Uint32Array(indices);
+      g.setIndex(new THREE.Uint32BufferAttribute(idxClone, 1));
+    }
     if (!g.hasAttribute('normal')) g.computeVertexNormals();
     g.computeBoundingBox();
     var size = new THREE.Vector3(), center = new THREE.Vector3();
@@ -1704,9 +1849,6 @@
     items = items || [];
     lastPlateArgs = { items: items, activeId: activeId, tips: tips };
     if (!items.length) return;
-
-    if (!plateTex.light) plateTex.light = plateGridTexture(false);
-    if (!plateTex.dark) plateTex.dark = plateGridTexture(true);
 
     plateLayer = new THREE.Group();
     scene.add(plateLayer);
@@ -1750,7 +1892,8 @@
 
       var board = new THREE.Mesh(new THREE.PlaneGeometry(PLATE_W, PLATE_D),
         new THREE.MeshBasicMaterial({
-          map: on ? plateTex.dark : plateTex.light,
+          // 纯色底板 + 矢量网格线（不再用贴图，放大时线径恒定、不模糊）
+          color: on ? 0x33383B : 0xE4E4E4,
           transparent: true, opacity: on ? 0.98 : 0.9, side: THREE.DoubleSide
         }));
       board.rotation.x = -Math.PI / 2;
@@ -1759,6 +1902,8 @@
       // 否则它会和半透明零件一起按距离排序，某些视角下后绘制把零件整块盖住（零件时隐时现）
       board.renderOrder = -10;
       grp.add(board);
+      grp.add(plateGridLines(on));
+      grp.add(plateLogoMesh(on));
 
       var hw = PLATE_W / 2, hd = PLATE_D / 2;
       var bgeo = new THREE.BufferGeometry();
@@ -1948,7 +2093,11 @@
     }
     return src.toDataURL('image/png');
   }
-  function hasGeometry() { return !!meshGeometry; }
+  function hasGeometry() {
+    // 必须真的有顶点才算——空盘（新建项目尚未建模）时 BufferGeometry 被 setGeometryData 赋值但 positions 为空
+    return !!meshGeometry && meshGeometry.attributes && meshGeometry.attributes.position &&
+      meshGeometry.attributes.position.count > 0;
+  }
   /** 3D 场景是否已初始化（未 mount 过时为 false，页面外不应调用 setGeometryData） */
   function isReady() { return !!renderer; }
 
@@ -2027,8 +2176,10 @@
     _ledMesh: function () { return (ledMesh && ledMesh.children.length) ? ledMesh.children[0] : null; },
     /** 测试用：返回全部 LED 灯珠位姿组数组（多灯珠场景） */
     _ledMeshes: function () { return ledMesh ? ledMesh.children.slice() : []; },
-    /** 测试用：返回当前 xform 变换参数 */
+    /** 测试用：当前 xform 变换参数 */
     _xform: function () { return { cx: xform.cx, cy: xform.cy, cz: xform.cz, scale: xform.scale }; },
+    /** 测试用：盘面水印纹理（CanvasTexture），便于核对文字与配色 */
+    _plateLogoTex: function () { return plateLogoTex; },
     /** 测试用：返回端面高亮及其父级，用于验证高亮是否跟随 mesh 位姿 */
     _highlights: function () {
       return {
