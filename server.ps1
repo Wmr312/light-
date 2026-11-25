@@ -1,1 +1,72 @@
-JHJvb3QgPSAnYzpcVXNlcnNcbWFvcm9uZy53dVxEb3dubG9hZHNcbGlnaHQtZ3VpZGUtdmFsaWRhdG9yLTIwMjYxMDEzJwokcG9ydCA9IDgwODgKCiRtaW1lID0gQHsKICAgICcuaHRtbCc9J3RleHQvaHRtbDsgY2hhcnNldD11dGYtOCc7ICcuanMnPSdhcHBsaWNhdGlvbi9qYXZhc2NyaXB0OyBjaGFyc2V0PXV0Zi04JwogICAgJy5jc3MnPSd0ZXh0L2NzczsgY2hhcnNldD11dGYtOCc7ICcuanNvbic9J2FwcGxpY2F0aW9uL2pzb247IGNoYXJzZXQ9dXRmLTgnCiAgICAnLnN2Zyc9J2ltYWdlL3N2Zyt4bWwnOyAnLnBuZyc9J2ltYWdlL3BuZyc7ICcuanBnJz0naW1hZ2UvanBlZycKICAgICcuZ2lmJz0naW1hZ2UvZ2lmJzsgJy5pY28nPSdpbWFnZS94LWljb24nOyAnLnN0bCc9J2FwcGxpY2F0aW9uL29jdGV0LXN0cmVhbScKICAgICcud2FzbSc9J2FwcGxpY2F0aW9uL3dhc20nOyAnLm1hcCc9J2FwcGxpY2F0aW9uL2pzb247IGNoYXJzZXQ9dXRmLTgnCiAgICAnLndlYm1hbmlmZXN0Jz0nYXBwbGljYXRpb24vbWFuaWZlc3QranNvbjsgY2hhcnNldD11dGYtOCcKfQoKJGlwID0gW1N5c3RlbS5OZXQuSVBBZGRyZXNzXTo6TG9vcGJhY2sKJHNlcnZlciA9IFtTeXN0ZW0uTmV0LlNvY2tldHMuVGNwTGlzdGVuZXJdOjpuZXcoJGlwLCAkcG9ydCkKJHNlcnZlci5TdGFydCgpCldyaXRlLUhvc3QgIlNlcnZpbmcgJHJvb3QgYXQgaHR0cDovL2xvY2FsaG9zdDokcG9ydC8gKFRDUCBkaXJlY3QpIgoKJGluYyA9IFtTeXN0ZW0uVGV4dC5FbmNvZGluZ106OlVURjgKJGJ1ZiA9IE5ldy1PYmplY3QgYnl0ZVtdIDgxOTIKCmZ1bmN0aW9uIFNlbmQtSHR0cChbU3lzdGVtLk5ldC5Tb2NrZXRzLlNvY2tldF0kc29jaywgW2ludF0kY29kZSwgW3N0cmluZ10kY3QsIFtieXRlW11dJGJvZHkpIHsKICAgICRyZWFzb24gPSBzd2l0Y2ggKCRjb2RlKSB7IDIwMCB7J09LJ30gOyA0MDQgeydOb3QgRm91bmQnfSA7IGRlZmF1bHQgeydFcnJvcid9IH0KICAgICRoZWFkZXIgPSAiSFRUUC8xLjEgJGNvZGUgJHJlYXNvbmByYG5Db250ZW50LVR5cGU6ICRjdGByYG5Db250ZW50LUxlbmd0aDogJCgkYm9keS5MZW5ndGgpYHJgbkNvbm5lY3Rpb246IGNsb3NlYHJgbkFjY2Vzcy1Db250cm9sLUFsbG93LU9yaWdpbjogKmByYG5gcmBuIgogICAgJGhiID0gJGVuYy5HZXRCeXRlcygkaGVhZGVyKQogICAgJHNvY2suU2VuZCgkaGIpIHwgT3V0LU51bGwKICAgIGlmICgkYm9keS5MZW5ndGggLWd0IDApIHsgJHNvY2suU2VuZCgkYm9keSkgfCBPdXQtTnVsbCB9Cn0KCndoaWxlICgkdHJ1ZSkgewogICAgJGNsaWVudCA9ICRzZXJ2ZXIuQWNjZXB0U29ja2V0KCkKICAgIHRyeSB7CiAgICAgICAgJHRvdGFsID0gMAogICAgICAgIHdoaWxlICgkdG90YWwgLWx0ICRidWYuTGVuZ3RoKSB7CiAgICAgICAgICAgICRuID0gJGNsaWVudC5SZWNlaXZlKCRidWYsICR0b3RhbCwgJGJ1Zi5MZW5ndGggLSAkdG90YWwsIFtTeXN0ZW0uTmV0LlNvY2tldHMuU29ja2V0RmxhZ3NdOjpOb25lKQogICAgICAgICAgICBpZiAoJG4gLWxlIDApIHsgYnJlYWsgfQogICAgICAgICAgICAkdG90YWwgKz0gJG4KICAgICAgICAgICAgaWYgKCR0b3RhbCAtZ2UgNCAtYW5kICRlbmMuR2V0U3RyaW5nKCRidWYsIDAsICR0b3RhbCkuQ29udGFpbnMoImByYG5gcmBuIikpIHsgYnJlYWsgfQogICAgICAgIH0KICAgICAgICBpZiAoJHRvdGFsIC1lcSAwKSB7ICRjbGllbnQuQ2xvc2UoKTsgY29udGludWUgfQogICAgICAgICRyZXEgPSAkZW5jLkdldFN0cmluZygkYnVmLCAwLCAkdG90YWwpCiAgICAgICAgJGxpbmVzID0gJHJlcSAtc3BsaXQgImByYG4iCiAgICAgICAgJHJlcXVlc3RMaW5lID0gJGxpbmVzWzBdCiAgICAgICAgaWYgKCRyZXF1ZXN0TGluZSAtbm90bWF0Y2ggJ14oXHcrKVxzKyhcUyspXHMrSFRUUC8nKSB7ICRjbGllbnQuQ2xvc2UoKTsgY29udGludWUgfQogICAgICAgICRtZXRob2QgPSAkTWF0Y2hlc1sxXTsgJHJhd1BhdGggPSAkTWF0Y2hlc1syXQogICAgICAgIGlmICgkbWV0aG9kIC1uZSAnR0VUJyAtYW5kICRtZXRob2QgLW5lICdIRUFEJykgewogICAgICAgICAgICBTZW5kLUh0dHAgJGNsaWVudCA0MDUgJ3RleHQvcGxhaW4nICgkZW5jLkdldEJ5dGVzKCdNZXRob2QgTm90IEFsbG93ZWQnKSkKICAgICAgICAgICAgJGNsaWVudC5DbG9zZSgpOyBjb250aW51ZQogICAgICAgIH0KICAgICAgICAkcGF0aCA9ICgkcmF3UGF0aCAtc3BsaXQgJ1w/JylbMF0uVHJpbVN0YXJ0KCcvJykKICAgICAgICBpZiAoLW5vdCAkcGF0aCkgeyAkcGF0aCA9ICdpbmRleC5odG1sJyB9CiAgICAgICAgJGZ1bGxQYXRoID0gSm9pbi1QYXRoICRyb290IChbU3lzdGVtLlVyaV06OlVuZXNjYXBlRGF0YVN0cmluZygkcGF0aCkpCiAgICAgICAgaWYgKC1ub3QgKFRlc3QtUGF0aCAkZnVsbFBhdGgpIC1vciAoR2V0LUl0ZW0gJGZ1bGxQYXRoKS5QU0lzQ29udGFpbmVyKSB7CiAgICAgICAgICAgICRmdWxsUGF0aCA9IEpvaW4tUGF0aCAkcm9vdCAnaW5kZXguaHRtbCcKICAgICAgICB9CiAgICAgICAgaWYgKFRlc3QtUGF0aCAkZnVsbFBhdGgpIHsKICAgICAgICAgICAgJGV4dCA9IFtTeXN0ZW0uSU8uUGF0aF06OkdldEV4dGVuc2lvbigkZnVsbFBhdGgpLlRvTG93ZXIoKQogICAgICAgICAgICAkY3QgPSBpZiAoJG1pbWUuQ29udGFpbnNLZXkoJGV4dCkpIHsgJG1pbWVbJGV4dF0gfSBlbHNlIHsgJ2FwcGxpY2F0aW9uL29jdGV0LXN0cmVhbScgfQogICAgICAgICAgICAkYnl0ZXMgPSBbU3lzdGVtLklPLkZpbGVdOjpSZWFkQWxsQnl0ZXMoJGZ1bGxQYXRoKQogICAgICAgICAgICBTZW5kLUh0dHAgJGNsaWVudCAyMDAgJGN0ICRieXRlcwogICAgICAgICAgICBXcml0ZS1Ib3N0ICIyMDAgICRyYXdQYXRoICAoJCgkYnl0ZXMuTGVuZ3RoKSBCKSIKICAgICAgICB9IGVsc2UgewogICAgICAgICAgICBTZW5kLUh0dHAgJGNsaWVudCA0MDQgJ3RleHQvcGxhaW4nICgkZW5jLkdldEJ5dGVzKCdOb3QgRm91bmQnKSkKICAgICAgICAgICAgV3JpdGUtSG9zdCAiNDA0ICAkcmF3UGF0aCIKICAgICAgICB9CiAgICB9IGNhdGNoIHsKICAgICAgICBXcml0ZS1Ib3N0ICJFUlIgJCgkXy5FeGNlcHRpb24uTWVzc2FnZSkiCiAgICB9IGZpbmFsbHkgewogICAgICAgIHRyeSB7ICRjbGllbnQuU2h1dGRvd24oW1N5c3RlbS5OZXQuU29ja2V0cy5Tb2NrZXRTaHV0ZG93bl06OkJvdGgpIH0gY2F0Y2gge30KICAgICAgICB0cnkgeyAkY2xpZW50LkNsb3NlKCkgfSBjYXRjaCB7fQogICAgfQp9CiRzZXJ2ZXIuU3RvcCgpCg==
+$root = 'c:\Users\maorong.wu\Downloads\light-guide-validator-20261013'
+$port = 8088
+
+$mime = @{
+    '.html'='text/html; charset=utf-8'; '.js'='application/javascript; charset=utf-8'
+    '.css'='text/css; charset=utf-8'; '.json'='application/json; charset=utf-8'
+    '.svg'='image/svg+xml'; '.png'='image/png'; '.jpg'='image/jpeg'
+    '.gif'='image/gif'; '.ico'='image/x-icon'; '.stl'='application/octet-stream'
+    '.wasm'='application/wasm'; '.map'='application/json; charset=utf-8'
+    '.webmanifest'='application/manifest+json; charset=utf-8'
+}
+
+$ip = [System.Net.IPAddress]::Loopback
+$server = [System.Net.Sockets.TcpListener]::new($ip, $port)
+$server.Start()
+Write-Host "Serving $root at http://localhost:$port/ (TCP direct)"
+
+$enc = [System.Text.Encoding]::UTF8
+$buf = New-Object byte[] 8192
+
+function Send-Http([System.Net.Sockets.Socket]$sock, [int]$code, [string]$ct, [byte[]]$body) {
+    $reason = switch ($code) { 200 {'OK'} ; 404 {'Not Found'} ; default {'Error'} }
+    $header = "HTTP/1.1 $code $reason`r`nContent-Type: $ct`r`nContent-Length: $($body.Length)`r`nConnection: close`r`nAccess-Control-Allow-Origin: *`r`n`r`n"
+    $hb = $enc.GetBytes($header)
+    $sock.Send($hb) | Out-Null
+    if ($body.Length -gt 0) { $sock.Send($body) | Out-Null }
+}
+
+while ($true) {
+    $client = $server.AcceptSocket()
+    try {
+        $total = 0
+        while ($total -lt $buf.Length) {
+            $n = $client.Receive($buf, $total, $buf.Length - $total, [System.Net.Sockets.SocketFlags]::None)
+            if ($n -le 0) { break }
+            $total += $n
+            if ($total -ge 4 -and $enc.GetString($buf, 0, $total).Contains("`r`n`r`n")) { break }
+        }
+        if ($total -eq 0) { $client.Close(); continue }
+        $req = $enc.GetString($buf, 0, $total)
+        $lines = $req -split "`r`n"
+        $requestLine = $lines[0]
+        if ($requestLine -notmatch '^(\w+)\s+(\S+)\s+HTTP/') { $client.Close(); continue }
+        $method = $Matches[1]; $rawPath = $Matches[2]
+        if ($method -ne 'GET' -and $method -ne 'HEAD') {
+            Send-Http $client 405 'text/plain' ($enc.GetBytes('Method Not Allowed'))
+            $client.Close(); continue
+        }
+        $path = ($rawPath -split '\?')[0].TrimStart('/')
+        if (-not $path) { $path = 'index.html' }
+        $fullPath = Join-Path $root ([System.Uri]::UnescapeDataString($path))
+        if (-not (Test-Path $fullPath) -or (Get-Item $fullPath).PSIsContainer) {
+            $fullPath = Join-Path $root 'index.html'
+        }
+        if (Test-Path $fullPath) {
+            $ext = [System.IO.Path]::GetExtension($fullPath).ToLower()
+            $ct = if ($mime.ContainsKey($ext)) { $mime[$ext] } else { 'application/octet-stream' }
+            $bytes = [System.IO.File]::ReadAllBytes($fullPath)
+            Send-Http $client 200 $ct $bytes
+            Write-Host "200  $rawPath  ($($bytes.Length) B)"
+        } else {
+            Send-Http $client 404 'text/plain' ($enc.GetBytes('Not Found'))
+            Write-Host "404  $rawPath"
+        }
+    } catch {
+        Write-Host "ERR $($_.Exception.Message)"
+    } finally {
+        try { $client.Shutdown([System.Net.Sockets.SocketShutdown]::Both) } catch {}
+        try { $client.Close() } catch {}
+    }
+}
+$server.Stop()
