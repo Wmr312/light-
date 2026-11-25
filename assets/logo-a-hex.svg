@@ -1,1 +1,12 @@
-PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IuaWueahiEEg5YWt5qOx5YWJ6ZSlIj4KICA8cmVjdCB4PSIxIiB5PSIxIiB3aWR0aD0iNjIiIGhlaWdodD0iNjIiIHJ4PSIxNSIgZmlsbD0iIzEyMzEzQiIvPgogIDwhLS0g5YWt5qOx5p+x5oiq6Z2i77yI5a+85YWJ5p+x5aSW5b2i77yJIC0tPgogIDxwYXRoIGQ9Ik0yNCAxOWwxMS4zIDYuNXYxM0wyNCA0NWwtMTEuMy02LjV2LTEzeiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjIuNiIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0yNCAyNi41bDUuNiAzLjJ2Ni42TDI0IDM5LjVsLTUuNi0zLjJ2LTYuNnoiIGZpbGw9IiMyRUQ4QzYiIG9wYWNpdHk9Ii4yOCIvPgogIDwhLS0g56uv6Z2i5Ye65bCE5YWJ6ZSlIC0tPgogIDxnIHN0cm9rZT0iIzJFRDhDNiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiIGZpbGw9Im5vbmUiPgogICAgPHBhdGggZD0iTTM1LjggMzJMNTAgMjMuNSIvPgogICAgPHBhdGggZD0iTTM1LjggMzJoMTUiLz4KICAgIDxwYXRoIGQ9Ik0zNS44IDMyTDUwIDQwLjUiLz4KICA8L2c+Cjwvc3ZnPgo=
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="方案A 六棱光锥">
+  <rect x="1" y="1" width="62" height="62" rx="15" fill="#12313B"/>
+  <!-- 六棱柱截面（导光柱外形） -->
+  <path d="M24 19l11.3 6.5v13L24 45l-11.3-6.5v-13z" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M24 26.5l5.6 3.2v6.6L24 39.5l-5.6-3.2v-6.6z" fill="#2ED8C6" opacity=".28"/>
+  <!-- 端面出射光锥 -->
+  <g stroke="#2ED8C6" stroke-width="3" stroke-linecap="round" fill="none">
+    <path d="M35.8 32L50 23.5"/>
+    <path d="M35.8 32h15"/>
+    <path d="M35.8 32L50 40.5"/>
+  </g>
+</svg>
