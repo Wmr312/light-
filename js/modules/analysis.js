@@ -354,9 +354,8 @@
             LG.Charts.drawSpotCloud(c2, { res: view.cloud.res, half: view.cloud.half, E: it.E, Emax: it.Emax }, {});
           });
         } else if (mode === 'sep') {
-          // 单波长：没有可分离的波长，给出提示而不是空白
-          sepBox.style.display = '';
-          sepBox.innerHTML = '<div class="hint">' + LG.t('spot.disp.nomulti') + '</div>';
+          // 单波长：不生成逐 λ 分离图，下方色差量化卡片会统一给出提示
+          sepBox.style.display = 'none';
         } else {
           sepBox.style.display = 'none';
         }
